@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('marca');
             $table->string('modelo');
             $table->string('color');
-            $table->integer('año')->nullable();
+            $table->integer('anio')->nullable();
             // El kilometraje no va aquí porque cambia en cada visita
             $table->timestamps();
         });

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('clientes', function (Blueprint $table) {
             $table->id();
             // Requeridos día a día
-            $table->string('nombre_completo');
+            $table->string('nombre');
             $table->string('dui')->nullable();
             $table->string('telefono');
             
