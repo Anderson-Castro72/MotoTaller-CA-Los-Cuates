@@ -10,6 +10,46 @@ use App\Models\OrdenEntrada;
 
 class RecepcionController extends Controller
 {
+// 1. Mostrar la tabla principal con Filtros
+    public function index(Request $request)
+    {
+        // Iniciamos la consulta base con sus relaciones
+        $query = OrdenEntrada::with(['cliente', 'motocicleta']);
+
+        // Filtro por Nombre de Cliente (Busca en la tabla relacionada)
+        if ($request->filled('cliente')) {
+            $query->whereHas('cliente', function($q) use ($request) {
+                $q->where('nombre', 'ilike', '%' . $request->cliente . '%');
+            });
+        }
+
+        // Filtro por Placa de Motocicleta (Busca en la tabla relacionada)
+        if ($request->filled('placa')) {
+            $query->whereHas('motocicleta', function($q) use ($request) {
+                $q->where('placa', 'ilike', '%' . $request->placa . '%');
+            });
+        }
+
+        // Filtro por Estado de la Orden
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+// Filtro por Fecha de Inicio
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('created_at', '>=', $request->fecha_inicio);
+        }
+
+        // Filtro por Fecha de Fin
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('created_at', '<=', $request->fecha_fin);
+        }
+
+        // Ejecutamos la consulta ordenando por los más recientes y paginando
+        $ordenes = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('recepcion.index', compact('ordenes'));
+    }
     // 1. Mostrar la pantalla del formulario
     public function create()
     {

@@ -10,7 +10,8 @@ Route::get('/inventario/verificar-codigo/{codigo}', [ProductoController::class, 
 Route::resource('inventario', ProductoController::class);
 
 // Rutas para el Módulo de Recepción (Todo en Uno)
-Route::get('/recepcion/crear', [RecepcionController::class, 'create'])->name('recepcion.create');
+Route::get('/recepcion', [RecepcionController::class, 'index'])->name('recepcion.index');
+Route::get('/recepcion/create', [RecepcionController::class, 'create'])->name('recepcion.create');
 Route::post('/recepcion/guardar', [RecepcionController::class, 'store'])->name('recepcion.store');
 
 // Rutas invisibles para AJAX (Buscadores)
