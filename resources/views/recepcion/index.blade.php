@@ -108,10 +108,69 @@
                                         <span class="badge {{ $badgeColor }} fs-6">{{ $orden->estado }}</span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-info text-white" title="Ver Detalles">👁️</button>
-                                        <button class="btn btn-sm btn-success" title="Facturar / POS">💲</button>
+                                        <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#modalDetalles{{ $orden->id }}" title="Ver Detalles">👁️</button>
+                                        
+                                        <a href="{{ route('ventas.pos', $orden->id) }}" class="btn btn-sm btn-success" title="Facturar / POS">💲</a>
                                     </td>
                                 </tr>
+                                <div class="modal fade text-start" id="modalDetalles{{ $orden->id }}" tabindex="-1" aria-labelledby="modalLabel{{ $orden->id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-info text-white">
+                                                <h5 class="modal-title fw-bold" id="modalLabel{{ $orden->id }}">📋 Detalles de Orden #{{ str_pad($orden->id, 5, '0', STR_PAD_LEFT) }}</h5>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6 mb-2">
+                                                        <h6 class="fw-bold text-primary border-bottom pb-1">🏍️ Motocicleta</h6>
+                                                        <p class="mb-1"><strong>Placa:</strong> <span class="text-uppercase">{{ $orden->motocicleta->placa }}</span></p>
+                                                        <p class="mb-1"><strong>Vehículo:</strong> {{ $orden->motocicleta->marca }} {{ $orden->motocicleta->modelo }}</p>
+                                                        <p class="mb-1"><strong>Kilometraje:</strong> {{ number_format($orden->kilometraje_entrada) }} km</p>
+                                                        <p class="mb-0"><strong>Combustible:</strong> {{ $orden->nivel_combustible }}</p>
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <h6 class="fw-bold text-primary border-bottom pb-1">👤 Cliente (Responsable)</h6>
+                                                        <p class="mb-1"><strong>Nombre:</strong> {{ $orden->cliente->nombre }}</p>
+                                                        <p class="mb-1"><strong>DUI:</strong> {{ $orden->cliente->dui ?? 'N/A' }}</p>
+                                                        <p class="mb-0"><strong>Teléfono:</strong> {{ $orden->cliente->telefono ?? 'N/A' }}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-12">
+                                                        <h6 class="fw-bold text-primary border-bottom pb-1">🛠️ Reporte de Ingreso</h6>
+                                                        <p class="mb-1"><strong>Falla Reportada:</strong><br> {{ $orden->falla_reportada }}</p>
+                                                        <p class="mb-0"><strong>Observaciones físicas:</strong><br> {{ $orden->observaciones ?? 'Ninguna observación extra.' }}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <h6 class="fw-bold text-primary border-bottom pb-1 mt-3">📸 Evidencia Fotográfica</h6>
+                                                <div class="row text-center mt-2">
+                                                    @for($i = 1; $i <= 4; $i++)
+                                                        @php $foto = 'foto_' . $i; @endphp
+                                                        <div class="col-md-3 col-6 mb-2">
+                                                            @if($orden->$foto)
+                                                                <a href="{{ asset('storage/' . $orden->$foto) }}" target="_blank">
+                                                                    <img src="{{ asset('storage/' . $orden->$foto) }}" class="img-thumbnail shadow-sm" alt="Foto {{ $i }}" style="height: 120px; width: 100%; object-fit: cover; border-radius: 8px;">
+                                                                </a>
+                                                            @else
+                                                                <div class="border rounded bg-light d-flex flex-column align-items-center justify-content-center text-muted" style="height: 120px; border-radius: 8px;">
+                                                                    <span class="fs-4">📷</span>
+                                                                    <small>Sin foto</small>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+                                                    @endfor
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer bg-light">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar Detalles</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
                             @empty
                                 <tr>
                                     <td colspan="5" class="text-center py-4 text-muted">
