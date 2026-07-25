@@ -7,16 +7,19 @@ use App\Models\OrdenEntrada;
 use App\Models\Producto;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
+use Illuminate\Support\Facades\DB;
 
 class VentaController extends Controller
 {
-    // 1. Mostrar la pantalla del Punto de Venta (POS)
     public function pos($orden_id)
     {
-        // Buscamos la orden con su cliente y motocicleta para mostrarlos en el ticket
+        // Buscamos la orden con su cliente y motocicleta
         $orden = OrdenEntrada::with(['cliente', 'motocicleta'])->findOrFail($orden_id);
         
-        return view('ventas.pos', compact('orden'));
+        // Traemos todos los servicios activos para el catálogo rápido
+        $servicios = Producto::where('es_servicio', true)->where('activo', true)->get();
+        
+        return view('ventas.pos', compact('orden', 'servicios'));
     }
 
     // 2. Función AJAX para el Escáner de Código de Barras

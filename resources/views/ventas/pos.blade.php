@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Punto de Venta - MotoTaller</title>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -20,19 +21,20 @@
                 <h3 class="text-primary fw-bold mb-0">🛒 Punto de Venta (POS)</h3>
                 <p class="text-muted mb-0">Orden #{{ str_pad($orden->id, 5, '0', STR_PAD_LEFT) }} | Cliente: <strong>{{ $orden->cliente->nombre }}</strong> | Moto: <strong>{{ $orden->motocicleta->placa }}</strong></p>
             </div>
-            <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver a Recepciones</a>
+            <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
         </div>
 
         <div class="row">
             <div class="col-lg-8">
                 <div class="card shadow-sm mb-3 border-success">
                     <div class="card-body">
-                        <label class="form-label fw-bold text-success">🔍 Escanear o Buscar Código de Repuesto/Servicio</label>
+                        <label class="form-label fw-bold text-success"> Escanear Código</label>
                         <div class="input-group mb-2">
-                            <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Pista: Usa la pistola láser o escribe y presiona Enter..." autofocus>
+                            <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Codigo de Producto" autofocus>
                             <button class="btn btn-success" type="button" id="btnBuscar">Agregar ➕</button>
                         </div>
-                        <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">📸 Usar Cámara del Celular</button>
+                        <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">Escanear</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">Servicios</button>
                         <div id="reader" width="100%" style="display: none;" class="mt-3"></div>
                     </div>
                 </div>
@@ -82,7 +84,7 @@
                             <h4 class="text-success fw-bold">$<span id="txtTotal">0.00</span></h4>
                         </div>
 
-                        <form action="#" method="POST" id="formVenta">
+                        <form action="{{ route('ventas.store') }}" method="POST" id="formVenta">
                             @csrf
                             <input type="hidden" name="orden_entrada_id" value="{{ $orden->id }}">
                             <input type="hidden" name="cliente_id" value="{{ $orden->cliente_id }}">
@@ -103,6 +105,44 @@
                                 💳 Procesar Cobro
                             </button>
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalServicios" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold">🛠️ Servicios de Taller</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="input-group mb-3">
+                        <span class="input-group-text bg-light">🔍</span>
+                        <input type="text" id="buscadorServicios" class="form-control" placeholder="Buscar servicio por nombre o código..." autocomplete="off">
+                    </div>
+
+                    <div class="list-group list-group-flush" id="listaServicios">
+                        @forelse($servicios as $servicio)
+                            <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
+                                <div>
+                                    <h6 class="mb-0 fw-bold nombre-servicio">{{ $servicio->nombre }}</h6>
+                                    <small class="text-muted">{{ $servicio->codigo }}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="d-block text-success fw-bold mb-1">${{ number_format($servicio->precio_sin_iva, 2) }}</span>
+                                    <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal" onclick="buscarProducto('{{ $servicio->codigo }}')">
+                                        Agregar ➕
+                                    </button>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="p-4 text-center text-muted">
+                                No hay servicios registrados o activos en el catálogo.
+                            </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -178,7 +218,7 @@
             }
 
             // --- 2. Búsqueda por AJAX (Lector de barras o Enter) ---
-            function buscarProducto(codigo) {
+            window.buscarProducto = function(codigo) {
                 if(!codigo) return;
                 
                 fetch(`/ventas/buscar-producto/${codigo}`)
@@ -243,6 +283,38 @@
                 readerDiv.style.display = 'none';
                 inputCodigo.value = decodedText;
                 buscarProducto(decodedText); // Busca y agrega de inmediato
+            }
+
+            // --- Búsqueda en tiempo real dentro del Modal de Servicios ---
+            const buscadorServicios = document.getElementById('buscadorServicios');
+            
+            if (buscadorServicios) {
+                buscadorServicios.addEventListener('keyup', function() {
+                    let filtro = this.value.toLowerCase();
+                    let items = document.querySelectorAll('.item-servicio');
+
+                    items.forEach(function(item) {
+                        // Busca coincidencia en todo el texto del ítem (nombre y código)
+                        let texto = item.innerText.toLowerCase();
+                        if (texto.includes(filtro)) {
+                            item.classList.remove('d-none');
+                            item.classList.add('d-flex');
+                        } else {
+                            item.classList.remove('d-flex');
+                            item.classList.add('d-none');
+                        }
+                    });
+                });
+            }
+
+            // Opcional: Limpiar el buscador cada vez que se abre el modal
+            const modalServicios = document.getElementById('modalServicios');
+            if (modalServicios) {
+                modalServicios.addEventListener('shown.bs.modal', function () {
+                    buscadorServicios.value = '';
+                    buscadorServicios.dispatchEvent(new Event('keyup')); // Resetea la lista
+                    buscadorServicios.focus(); // Pone el cursor listo para escribir
+                });
             }
         });
     </script>
