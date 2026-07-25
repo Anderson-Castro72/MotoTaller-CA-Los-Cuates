@@ -222,6 +222,30 @@
                     fechaInicio.max = hoy; 
                 }
             });
+
+            @if(session('success'))
+                @if(session('tipo_documento') == 'Ticket')
+                    // 1. Es TICKET INTERNO: Abre la ventana de impresión automáticamente
+                    window.open("{{ url('/ventas/imprimir') }}/{{ session('ticket_id') }}", "_blank", "width=400,height=600");
+                    
+                    // 2. Muestra un mensaje breve que se cierra solo en 2 segundos (sin molestar al cajero)
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Ticket Generado!',
+                        text: '{{ session('success') }}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                @else
+                    // Es FCF o CCF: Solo muestra la alerta de éxito tradicional
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Cobro Procesado!',
+                        text: 'Documento {{ session('tipo_documento') }} registrado. {{ session('success') }}',
+                        confirmButtonColor: '#198754'
+                    });
+                @endif
+            @endif
         });
     </script>
 </html>

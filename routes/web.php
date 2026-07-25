@@ -23,3 +23,4 @@ Route::get('/recepcion/verificar-moto/{placa}', [RecepcionController::class, 've
 Route::get('/ventas/pos/{orden_id}', [VentaController::class, 'pos'])->name('ventas.pos');
 Route::get('/ventas/buscar-producto/{codigo}', [VentaController::class, 'buscarProducto']);
 Route::post('/ventas/guardar', [VentaController::class, 'store'])->name('ventas.store');
+Route::get('/ventas/imprimir/{id}', [VentaController::class, 'imprimirTicket'])->name('ventas.imprimir');
