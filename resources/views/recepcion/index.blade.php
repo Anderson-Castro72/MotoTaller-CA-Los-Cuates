@@ -226,7 +226,7 @@
             @if(session('success'))
                 @if(session('tipo_documento') == 'Ticket')
                     // 1. Es TICKET INTERNO: Abre la ventana de impresión automáticamente
-                    window.open("{{ url('/ventas/imprimir') }}/{{ session('ticket_id') }}", "_blank", "width=400,height=600");
+                   window.location.href = "{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}";
                     
                     // 2. Muestra un mensaje breve que se cierra solo en 2 segundos (sin molestar al cajero)
                     Swal.fire({

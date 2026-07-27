@@ -8,6 +8,8 @@ use App\Models\Producto;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
 use Illuminate\Support\Facades\DB;
+use Mike42\Escpos\Printer;
+use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
 
 class VentaController extends Controller
 {
@@ -105,10 +107,99 @@ class VentaController extends Controller
             return redirect()->back()->withErrors('Ocurrió un error al procesar el cobro: ' . $e->getMessage());
         }
     }
-    // Generar la vista de impresión del ticket térmico
-    public function imprimirTicket($id)
+    // Generar e imprimir el ticket directamente por Red (LAN)
+    public function imprimirTicketRed($id)
     {
         $venta = Venta::with(['detalles.producto', 'orden.cliente', 'orden.motocicleta'])->findOrFail($id);
-        return view('ventas.ticket', compact('venta'));
+
+        try {
+            // Conectamos directo a la IP de la ticketera (Puerto 9100 por defecto)
+            $connector = new NetworkPrintConnector("192.168.1.200", 9100); 
+            $printer = new Printer($connector);
+
+ // --- DISEÑO DEL TICKET (Comandos ESC/POS Puros) ---
+            
+            // Las impresoras de 80mm (como la RPT006) tienen un ancho estándar de 42 caracteres.
+            $ancho = 42;
+            $linea = str_repeat("-", $ancho) . "\n";
+
+            // 1. Encabezado Centrado
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->setEmphasis(true); // Negrita
+            $printer->text("TALLER \"LOS CUATES\"\n");
+            $printer->setEmphasis(false);
+            $printer->text("De: Chito Aparicio\n");
+            $printer->text("Fecha: " . $venta->created_at->format('d/m/Y H:i') . "\n");
+            $printer->text("Ticket Interno #" . strtoupper(substr($venta->id, -8)) . "\n");
+            $printer->text($linea);
+
+            // 2. Datos del Cliente (Izquierda)
+            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            $printer->text("Cliente: " . $venta->orden->cliente->nombre . "\n");
+            $printer->text("Vehiculo: " . $venta->orden->motocicleta->placa . " - " . $venta->orden->motocicleta->marca . "\n");
+            $printer->text($linea);
+
+            // 3. Cabecera de Productos (Matemática para empujar "TOTAL" a la derecha)
+            $cabeceraIzq = "CANT DESCRIPCION";
+            $cabeceraDer = "TOTAL";
+            $espacios = $ancho - mb_strlen($cabeceraIzq) - mb_strlen($cabeceraDer);
+            $printer->text($cabeceraIzq . str_repeat(" ", $espacios > 0 ? $espacios : 1) . $cabeceraDer . "\n");
+            $printer->text($linea);
+
+            // 4. Detalle de productos
+            foreach($venta->detalles as $detalle) {
+                $totalFila = "$" . number_format($detalle->subtotal_linea + $detalle->monto_iva_unitario, 2);
+                $izq = $detalle->cantidad . "  " . $detalle->producto->nombre;
+
+                // Si el nombre es muy largo, lo cortamos sutilmente para que no arruine la matemática
+                $maxIzq = $ancho - mb_strlen($totalFila) - 1;
+                if (mb_strlen($izq) > $maxIzq) {
+                    $izq = mb_substr($izq, 0, $maxIzq);
+                }
+
+                // Calculamos espacios blancos para rellenar el centro
+                $espacios = $ancho - mb_strlen($izq) - mb_strlen($totalFila);
+                $printer->text($izq . str_repeat(" ", $espacios > 0 ? $espacios : 1) . $totalFila . "\n");
+            }
+            $printer->text($linea);
+
+            // 5. Totales (Alineados matemáticamente a la derecha)
+            $subtotal = "$" . number_format($venta->subtotal, 2);
+            $esp = $ancho - mb_strlen("SUBTOTAL:") - mb_strlen($subtotal);
+            $printer->text("SUBTOTAL:" . str_repeat(" ", $esp > 0 ? $esp : 1) . $subtotal . "\n");
+
+            $iva = "$" . number_format($venta->total_iva, 2);
+            $esp = $ancho - mb_strlen("IVA (13%):") - mb_strlen($iva);
+            $printer->text("IVA (13%):" . str_repeat(" ", $esp > 0 ? $esp : 1) . $iva . "\n");
+
+            $printer->text("\n"); // Pequeño salto para destacar el total
+            
+            $printer->setEmphasis(true);
+            $total = "$" . number_format($venta->total_pagar, 2);
+            $esp = $ancho - mb_strlen("TOTAL A PAGAR:") - mb_strlen($total);
+            $printer->text("TOTAL A PAGAR:" . str_repeat(" ", $esp > 0 ? $esp : 1) . $total . "\n");
+            $printer->setEmphasis(false);
+
+            $printer->text($linea);
+
+            // 6. Pie de página
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->text("Gracias por su preferencia\n");
+            $printer->text("Revise su motocicleta antes\n");
+            $printer->text("de salir.\n");
+            $printer->text("\n\n"); // Espacio para que la cuchilla corte bien
+
+            // ¡EL COMANDO MÁGICO PARA LA CUCHILLA!
+            $printer->cut();
+            
+            // Cerramos la conexión
+            $printer->close();
+
+            return redirect()->back()->with('success', 'Ticket enviado a la impresora exitosamente.');
+
+        } catch (\Exception $e) {
+            // Si la impresora está apagada o sin papel, Laravel no se cae, solo te avisa.
+            return redirect()->back()->withErrors('Error de impresora: Revise si está encendida y conectada a la red. Detalle: ' . $e->getMessage());
+        }
     }
 }

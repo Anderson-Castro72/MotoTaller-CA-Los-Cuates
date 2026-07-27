@@ -36,7 +36,7 @@
         <h3 class="bold" style="margin: 0;">TALLER "LOS CUATES"</h3>
         <p style="margin: 2px 0;">De: Chito Aparicio</p>
         <p style="margin: 2px 0;">Fecha: {{ $venta->created_at->format('d/m/Y H:i') }}</p>
-        <p style="margin: 2px 0;">Ticket Interno #{{ strtoupper(substr($venta->id, 0, 8)) }}</p>
+        <p style="margin: 2px 0;">Ticket Interno #{{ strtoupper(substr($venta->id, -8)) }}</p>
     </div>
 
     <div class="divider"></div>
