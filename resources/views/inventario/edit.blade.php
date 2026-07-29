@@ -36,10 +36,10 @@
 
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Precio (Sin IVA) *</label>
+                            <label class="form-label">Precio de Venta (IVA Incluido) *</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" step="0.10" name="precio_sin_iva" class="form-control" value="{{ old('precio_sin_iva', $producto->precio_sin_iva) }}" required min="0">
+                                <input type="number" step="0.10" name="precio" class="form-control" value="{{ old('precio', $producto->precio) }}" required min="0">
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">

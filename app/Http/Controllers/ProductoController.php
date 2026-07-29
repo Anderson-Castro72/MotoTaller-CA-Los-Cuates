@@ -55,7 +55,7 @@ class ProductoController extends Controller
         $request->validate([
             'codigo' => 'nullable|string|unique:productos,codigo', 
             'nombre' => 'required|string|max:255',
-            'precio_sin_iva' => 'required|numeric|min:0',
+            'precio' => 'required|numeric|min:0',
             'stock_actual' => $reglas_stock,
             'stock_minimo' => $reglas_stock,
         ], [
@@ -81,7 +81,7 @@ public function update(Request $request, $id)
             // La magia está aquí: ignoramos el ID actual para que no dé error de duplicado consigo mismo
             'codigo' => 'nullable|string|unique:productos,codigo,' . $id, 
             'nombre' => 'required|string|max:255',
-            'precio_sin_iva' => 'required|numeric|min:0',
+            'precio' => 'required|numeric|min:0',
             'stock_actual' => $reglas_stock,
             'stock_minimo' => $reglas_stock,
         ], [

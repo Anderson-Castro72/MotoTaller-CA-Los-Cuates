@@ -175,7 +175,7 @@
                                     <span class="badge bg-info text-dark ms-2">Servicio</span>
                                 </div>
                                 <div class="text-end">
-                                    <span class="d-block text-success fw-bold mb-1">${{ number_format($servicio->precio_sin_iva, 2) }}</span>
+                                    <span class="d-block text-success fw-bold mb-1">${{ number_format($servicio->precio, 2) }}</span>
                                     <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal" onclick="buscarProducto('{{ $servicio->codigo }}')">
                                         Agregar ➕
                                     </button>
@@ -198,7 +198,7 @@
                                         @endif
                                     </div>
                                     <div class="text-end">
-                                        <span class="d-block text-success fw-bold mb-1">${{ number_format($producto->precio_sin_iva, 2) }}</span>
+                                        <span class="d-block text-success fw-bold mb-1">${{ number_format($producto->precio, 2) }}</span>
                                         
                                         <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal" 
                                             onclick="buscarProducto('{{ $producto->codigo }}')" 
@@ -355,9 +355,18 @@
                     
                     carrito.forEach((item, index) => {
                         // Cálculos por línea exigidos por MH
-                        let precioUnitarioSinIva = parseFloat(item.precio_sin_iva);
+                        // Cálculos a la inversa (El precio del producto YA incluye IVA)
+                        let precioFinalUnitario = parseFloat(item.precio); 
+
+                        // 1. Extraemos la base dividiendo entre 1.13
+                        let precioUnitarioSinIva = precioFinalUnitario / 1.13; 
+
+                        // 2. Obtenemos cuánto de ese precio era puro IVA
+                        let montoIvaUnitario = precioFinalUnitario - precioUnitarioSinIva; 
+
+                        // 3. Multiplicamos por la cantidad que lleva el cliente
                         let subtotalLinea = precioUnitarioSinIva * item.cantidad;
-                        let ivaLinea = subtotalLinea * tasaIVA;
+                        let ivaLinea = montoIvaUnitario * item.cantidad;
                         
                         subtotalGlobal += subtotalLinea;
                         ivaGlobal += ivaLinea;

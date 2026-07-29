@@ -18,7 +18,7 @@ class Producto extends Model
         'nombre', 
         'categoria_id', 
         'marca_id', 
-        'precio_sin_iva', 
+        'precio', 
         'stock_actual', 
         'stock_minimo', 
         'es_servicio',

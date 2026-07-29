@@ -35,10 +35,10 @@
 
                     <div class="row">
                         <div class="col-md-4 mb-3">
-                            <label class="form-label">Precio (Sin IVA) *</label>
+                            <label class="form-label">Precio de Venta (IVA Incluido) *</label>
                             <div class="input-group">
                                 <span class="input-group-text">$</span>
-                                <input type="number" step="0.10" name="precio_sin_iva" class="form-control" required>
+                                <input type="number" step="0.10" name="precio" class="form-control" required>
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
