@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RecepcionController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\ClienteController;
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -24,3 +26,6 @@ Route::get('/ventas/pos/{orden_id}', [VentaController::class, 'pos'])->name('ven
 Route::get('/ventas/buscar-producto/{codigo}', [VentaController::class, 'buscarProducto']);
 Route::post('/ventas/guardar', [VentaController::class, 'store'])->name('ventas.store');
 Route::get('/ventas/imprimir-red/{id}', [VentaController::class, 'imprimirTicketRed'])->name('ventas.imprimir_red');
+Route::get('/ventas/directa', [VentaController::class, 'posDirecto'])->name('ventas.directa');
+
+Route::post('/clientes/rapido', [ClienteController::class, 'storeRapido'])->name('clientes.rapido');

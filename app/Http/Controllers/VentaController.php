@@ -10,6 +10,7 @@ use App\Models\VentaDetalle;
 use Illuminate\Support\Facades\DB;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
+use Illuminate\Support\Str;
 
 class VentaController extends Controller
 {
@@ -42,7 +43,7 @@ class VentaController extends Controller
     {
         // 1. Validar que la información enviada sea correcta y no venga vacía
         $request->validate([
-            'orden_entrada_id' => 'required|exists:ordenes_entrada,id',
+            'orden_entrada_id' => 'nullable|exists:ordenes_entrada,id',
             'cliente_id' => 'required|exists:clientes,id',
             'subtotal_final' => 'required|numeric|min:0',
             'iva_final' => 'required|numeric|min:0',
@@ -88,10 +89,11 @@ class VentaController extends Controller
             }
 
             // 4. Cambiar el estado de la Orden de Recepción a "Facturado"
-            $orden = OrdenEntrada::find($request->orden_entrada_id);
-            $orden->estado = 'Facturado';
-            $orden->save();
-
+            if ($request->orden_entrada_id) {
+                $orden = OrdenEntrada::find($request->orden_entrada_id);
+                $orden->estado = 'Facturado';
+                $orden->save();
+            }
             // Si todo salió bien, guardamos permanentemente en la base de datos
             DB::commit();
 
@@ -107,17 +109,27 @@ class VentaController extends Controller
             return redirect()->back()->withErrors('Ocurrió un error al procesar el cobro: ' . $e->getMessage());
         }
     }
+    // Cargar POS para Venta Directa (Sin moto)
+    public function posDirecto()
+    {
+        // Traemos los clientes para que el cajero elija a quién le vende
+        $clientes = \App\Models\Cliente::all();
+        $servicios = Producto::where('es_servicio', true)->where('activo', true)->get();
+        
+        // Mandamos 'orden' como null para que la vista sepa que es Venta Directa
+        return view('ventas.pos', compact('clientes', 'servicios'))->with('orden', null);
+    }
+
     // Generar e imprimir el ticket directamente por Red (LAN)
     public function imprimirTicketRed($id)
     {
-        $venta = Venta::with(['detalles.producto', 'orden.cliente', 'orden.motocicleta'])->findOrFail($id);
-
+        $venta = Venta::with(['detalles.producto', 'cliente', 'orden.motocicleta'])->findOrFail($id);
         try {
             // Conectamos directo a la IP de la ticketera (Puerto 9100 por defecto)
             $connector = new NetworkPrintConnector("192.168.1.200", 9100); 
             $printer = new Printer($connector);
 
- // --- DISEÑO DEL TICKET (Comandos ESC/POS Puros) ---
+            // --- DISEÑO DEL TICKET (Comandos ESC/POS Puros) ---
             
             // Las impresoras de 80mm (como la RPT006) tienen un ancho estándar de 42 caracteres.
             $ancho = 42;
@@ -134,9 +146,19 @@ class VentaController extends Controller
             $printer->text($linea);
 
             // 2. Datos del Cliente (Izquierda)
+            // 2. Datos del Cliente (Izquierda)
             $printer->setJustification(Printer::JUSTIFY_LEFT);
-            $printer->text("Cliente: " . $venta->orden->cliente->nombre . "\n");
-            $printer->text("Vehiculo: " . $venta->orden->motocicleta->placa . " - " . $venta->orden->motocicleta->marca . "\n");
+            
+            // Obtenemos el cliente directamente de la venta y lo limpiamos de tildes
+            $printer->text("Cliente: " . Str::ascii($venta->cliente->nombre) . "\n");
+            
+            // Validamos si hay una moto en el taller, o si es un cliente de mostrador
+            if ($venta->orden_entrada_id && $venta->orden) {
+                $printer->text("Vehiculo: " . $venta->orden->motocicleta->placa . " - " . Str::ascii($venta->orden->motocicleta->marca) . "\n");
+            } else {
+                $printer->text("Tipo: Venta de Mostrador\n");
+            }
+            
             $printer->text($linea);
 
             // 3. Cabecera de Productos (Matemática para empujar "TOTAL" a la derecha)
@@ -149,7 +171,7 @@ class VentaController extends Controller
             // 4. Detalle de productos
             foreach($venta->detalles as $detalle) {
                 $totalFila = "$" . number_format($detalle->subtotal_linea + $detalle->monto_iva_unitario, 2);
-                $izq = $detalle->cantidad . "  " . $detalle->producto->nombre;
+                $izq = $detalle->cantidad . "  " . Str::ascii($detalle->producto->nombre);
 
                 // Si el nombre es muy largo, lo cortamos sutilmente para que no arruine la matemática
                 $maxIzq = $ancho - mb_strlen($totalFila) - 1;

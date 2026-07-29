@@ -19,8 +19,45 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h3 class="text-primary fw-bold mb-0">🛒 Punto de Venta (POS)</h3>
-                <p class="text-muted mb-0">Orden #{{ str_pad($orden->id, 5, '0', STR_PAD_LEFT) }} | Cliente: <strong>{{ $orden->cliente->nombre }}</strong> | Moto: <strong>{{ $orden->motocicleta->placa }}</strong></p>
+        @if($orden)
+            <h5 class="card-title">Orden #{{ $orden->id }}</h5>
+            <p class="mb-1"><strong>Cliente:</strong> {{ $orden->cliente->nombre }}</p>
+            <p class="mb-0"><strong>Vehículo:</strong> {{ $orden->motocicleta->placa }} - {{ $orden->motocicleta->marca }}</p>
+            
+            <input type="hidden" name="orden_entrada_id" form="formVenta" value="{{ $orden->id }}">
+            <input type="hidden" name="cliente_id" form="formVenta" value="{{ $orden->cliente_id }}">
+        @else
+            <h5 class="card-title text-success mb-3">🛒 Venta Directa (Mostrador)</h5>
+            
+            <label class="form-label"><strong>Seleccionar Cliente:</strong></label>
+            
+            <div class="d-flex gap-2">
+                
+                <div class="flex-grow-1">
+                    <select name="cliente_id" id="clienteSelect" form="formVenta" class="form-select select2" required>
+                        <option value="1">VENTA DE MOSTRADOR (Consumidor Final)</option>
+                        
+                        @foreach($clientes as $cliente)
+                            @if($cliente->id != 1)
+                                <option value="{{ $cliente->id }}">
+                                    {{ $cliente->nombre }} 
+                                    {{ $cliente->telefono ? ' | Tel: '.$cliente->telefono : '' }} 
+                                    {{ $cliente->dui ? ' | DUI: '.$cliente->dui : '' }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </select>
+                </div>
+                
+                <div>
+                    <button type="button" class="btn btn-primary h-100" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
+                        <i class="fas fa-plus"></i> Nuevo
+                    </button>
+                </div>
+                
             </div>
+        @endif    
+        </div>
             <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
         </div>
 
@@ -86,8 +123,10 @@
 
                         <form action="{{ route('ventas.store') }}" method="POST" id="formVenta">
                             @csrf
-                            <input type="hidden" name="orden_entrada_id" value="{{ $orden->id }}">
-                            <input type="hidden" name="cliente_id" value="{{ $orden->cliente_id }}">
+                            @if($orden)
+                                <input type="hidden" name="orden_entrada_id" value="{{ $orden->id }}">
+                                <input type="hidden" name="cliente_id" value="{{ $orden->cliente_id }}">
+                            @endif
                             <input type="hidden" name="subtotal_final" id="inputSubtotal">
                             <input type="hidden" name="iva_final" id="inputIva">
                             <input type="hidden" name="total_final" id="inputTotal">
@@ -149,12 +188,122 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar Cliente Rápido</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formClienteRapido" onsubmit="event.preventDefault(); guardarClienteRapido();">
+                        @csrf
+                        <div class="mb-2">
+                            <label>Nombre Completo *</label>
+                            <input type="text" name="nombre" id="nuevoNombre" class="form-control" required>
+                        </div>
+<div class="mb-3">
+    <label class="form-label">Teléfono</label>
+    <input type="text" name="telefono" id="nuevoTelefono" class="form-control" placeholder="0000-0000" inputmode="numeric" maxlength="9" oninput="formatoTel(this)">
+</div>
+<div class="mb-3">
+    <label class="form-label">DUI</label>
+    <input type="text" name="dui" id="nuevoDui" class="form-control" placeholder="00000000-0" inputmode="numeric" maxlength="10" oninput="formatoDui(this)">
+</div>
+                        <button type="submit" class="btn btn-success w-100 mt-3">Guardar y Seleccionar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        function formatoTel(input) {
+        let valor = input.value.replace(/\D/g, '');
+        if (valor.length > 4) {
+            valor = valor.substring(0, 4) + '-' + valor.substring(4, 8);
+        }
+        input.value = valor;
+    }
+
+    function formatoDui(input) {
+        let valor = input.value.replace(/\D/g, '');
+        if (valor.length > 8) {
+            valor = valor.substring(0, 8) + '-' + valor.substring(8, 10);
+        }
+        input.value = valor;
+    }
+
+    // --- FUNCIÓN PARA GUARDAR EL CLIENTE POR AJAX ---
+    function guardarClienteRapido() {
+        let form = document.getElementById('formClienteRapido');
+        let formData = new FormData(form);
+
+        fetch("{{ route('clientes.rapido') }}", {
+            method: 'POST',
+            body: formData,
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json' 
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => { throw err; });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if(data.success) {
+                // Formateamos cómo se verá en el buscador
+                let texto = data.cliente.nombre;
+                if(data.cliente.telefono) texto += ' | Tel: ' + data.cliente.telefono;
+                if(data.cliente.dui) texto += ' | DUI: ' + data.cliente.dui;
+                
+                // Lo agregamos a Select2 y lo seleccionamos
+                let nuevaOpcion = new Option(texto, data.cliente.id, true, true);
+                $('#clienteSelect').append(nuevaOpcion).trigger('change');
+                
+                // Cerramos el modal y limpiamos las cajas de texto
+                var modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente'));
+                modal.hide();
+                form.reset();
+                
+                // Alerta de éxito
+                Swal.fire('¡Éxito!', 'Cliente registrado y seleccionado.', 'success');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error capturado:', error);
+            let mensaje = "Error desconocido al intentar conectar con el servidor.";
+            
+            // Si la base de datos o Laravel devuelven un error específico
+            if (error.errors) {
+                mensaje = Object.values(error.errors).flat().join("\n");
+            } else if (error.message) {
+                mensaje = error.message;
+            }
+            
+            Swal.fire('Error al guardar', mensaje, 'error');
+        });
+    }
+
         document.addEventListener('DOMContentLoaded', function() {
             let carrito = []; // Memoria del carrito
             const tasaIVA = 0.13; // 13% de IVA de El Salvador
             const inputCodigo = document.getElementById('codigo_producto');
-            
+            $('.select2').select2({
+                placeholder: "Escriba para buscar un cliente...",
+                allowClear: true,
+                width: '100%' // Para que no rompa tu diseño de Bootstrap
+            });
             // --- 1. Lógica Matemática del Carrito ---
             function renderizarCarrito() {
                 const cuerpo = document.getElementById('cuerpoCarrito');

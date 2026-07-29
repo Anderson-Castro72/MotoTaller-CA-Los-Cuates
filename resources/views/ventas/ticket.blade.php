@@ -42,8 +42,13 @@
     <div class="divider"></div>
 
     <div class="text-left">
-        <p style="margin: 2px 0;"><strong>Cliente:</strong> {{ $venta->orden->cliente->nombre }}</p>
-        <p style="margin: 2px 0;"><strong>Vehículo:</strong> {{ $venta->orden->motocicleta->placa }} - {{ $venta->orden->motocicleta->marca }}</p>
+        <p style="margin: 2px 0;"><strong>Cliente:</strong> {{ $venta->cliente->nombre }}</p>
+        
+        @if($venta->orden_entrada_id && $venta->orden)
+            <p style="margin: 2px 0;"><strong>Vehículo:</strong> {{ $venta->orden->motocicleta->placa }} - {{ $venta->orden->motocicleta->marca }}</p>
+        @else
+            <p style="margin: 2px 0;"><strong>Tipo:</strong> Venta de Mostrador</p>
+        @endif
     </div>
 
     <div class="divider"></div>
