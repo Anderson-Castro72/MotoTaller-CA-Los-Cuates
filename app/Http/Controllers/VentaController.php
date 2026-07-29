@@ -21,8 +21,8 @@ class VentaController extends Controller
         
         // Traemos todos los servicios activos para el catálogo rápido
         $servicios = Producto::where('es_servicio', true)->where('activo', true)->get();
-        
-        return view('ventas.pos', compact('orden', 'servicios'));
+        $productos = Producto::where('es_servicio', false)->where('activo', true)->get();
+        return view('ventas.pos', compact('orden', 'servicios', 'productos'));
     }
 
     // 2. Función AJAX para el Escáner de Código de Barras
@@ -115,9 +115,9 @@ class VentaController extends Controller
         // Traemos los clientes para que el cajero elija a quién le vende
         $clientes = \App\Models\Cliente::all();
         $servicios = Producto::where('es_servicio', true)->where('activo', true)->get();
-        
+        $productos = Producto::where('es_servicio', false)->where('activo', true)->get();
         // Mandamos 'orden' como null para que la vista sepa que es Venta Directa
-        return view('ventas.pos', compact('clientes', 'servicios'))->with('orden', null);
+        return view('ventas.pos', compact('clientes', 'servicios', 'productos'))->with('orden', null);
     }
 
     // Generar e imprimir el ticket directamente por Red (LAN)

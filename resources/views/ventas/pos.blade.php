@@ -19,6 +19,9 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h3 class="text-primary fw-bold mb-0">🛒 Punto de Venta (POS)</h3>
+                </div>
+                    <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
+                </div>
         @if($orden)
             <h5 class="card-title">Orden #{{ $orden->id }}</h5>
             <p class="mb-1"><strong>Cliente:</strong> {{ $orden->cliente->nombre }}</p>
@@ -27,13 +30,13 @@
             <input type="hidden" name="orden_entrada_id" form="formVenta" value="{{ $orden->id }}">
             <input type="hidden" name="cliente_id" form="formVenta" value="{{ $orden->cliente_id }}">
         @else
-            <h5 class="card-title text-success mb-3">🛒 Venta Directa (Mostrador)</h5>
+            <h5 class="card-title text-success mb-3"> Venta Directa (Mostrador)</h5>
             
             <label class="form-label"><strong>Seleccionar Cliente:</strong></label>
             
             <div class="d-flex gap-2">
                 
-                <div class="flex-grow-1">
+                <div class="col-lg-7">
                     <select name="cliente_id" id="clienteSelect" form="formVenta" class="form-select select2" required>
                         <option value="1">VENTA DE MOSTRADOR (Consumidor Final)</option>
                         
@@ -57,21 +60,21 @@
                 
             </div>
         @endif    
-        </div>
-            <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
-        </div>
+
 
         <div class="row">
             <div class="col-lg-8">
                 <div class="card shadow-sm mb-3 border-success">
                     <div class="card-body">
-                        <label class="form-label fw-bold text-success"> Escanear Código</label>
+                        <label class="form-label fw-bold text-success"> Buscar Productos</label>
                         <div class="input-group mb-2">
-                            <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Codigo de Producto" autofocus>
+                            <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Código de producto" autofocus>
                             <button class="btn btn-success" type="button" id="btnBuscar">Agregar ➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">Escanear</button>
-                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">Servicios</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
+                            📦 Ver Catálogo
+                        </button>
                         <div id="reader" width="100%" style="display: none;" class="mt-3"></div>
                     </div>
                 </div>
@@ -151,24 +154,25 @@
     </div>
 
     <div class="modal fade" id="modalServicios" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable">
-            <div class="modal-content">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg"> <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold">🛠️ Servicios de Taller</h5>
+                    <h5 class="modal-title fw-bold">📦 Catálogo de Productos y Servicios</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3">
                     <div class="input-group mb-3">
                         <span class="input-group-text bg-light">🔍</span>
-                        <input type="text" id="buscadorServicios" class="form-control" placeholder="Buscar servicio por nombre o código..." autocomplete="off">
+                        <input type="text" id="buscadorServicios" class="form-control" placeholder="Buscar por nombre o código..." autocomplete="off">
                     </div>
 
                     <div class="list-group list-group-flush" id="listaServicios">
-                        @forelse($servicios as $servicio)
+                        
+                        @foreach($servicios as $servicio)
                             <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
                                 <div>
                                     <h6 class="mb-0 fw-bold nombre-servicio">{{ $servicio->nombre }}</h6>
                                     <small class="text-muted">{{ $servicio->codigo }}</small>
+                                    <span class="badge bg-info text-dark ms-2">Servicio</span>
                                 </div>
                                 <div class="text-end">
                                     <span class="d-block text-success fw-bold mb-1">${{ number_format($servicio->precio_sin_iva, 2) }}</span>
@@ -177,11 +181,40 @@
                                     </button>
                                 </div>
                             </div>
-                        @empty
+                        @endforeach
+
+                        @if(isset($productos))
+                            @foreach($productos as $producto)
+                                <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold nombre-servicio">{{ $producto->nombre }}</h6>
+                                        <small class="text-muted">{{ $producto->codigo }}</small>
+                                        <span class="badge bg-secondary ms-2">Producto</span>
+                                        
+                                        @if($producto->stock_actual > 0)
+                                            <span class="badge bg-success ms-1">Stock: {{ $producto->stock_actual }}</span>
+                                        @else
+                                            <span class="badge bg-danger ms-1">Sin Stock</span>
+                                        @endif
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="d-block text-success fw-bold mb-1">${{ number_format($producto->precio_sin_iva, 2) }}</span>
+                                        
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal" 
+                                            onclick="buscarProducto('{{ $producto->codigo }}')" 
+                                            {{ $producto->stock_actual <= 0 ? 'disabled' : '' }}>
+                                            Agregar ➕
+                                        </button>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endif
+
+                        @if($servicios->isEmpty() && (!isset($productos) || $productos->isEmpty()))
                             <div class="p-4 text-center text-muted">
-                                No hay servicios registrados o activos en el catálogo.
+                                No hay productos ni servicios en el catálogo.
                             </div>
-                        @endforelse
+                        @endif
                     </div>
                 </div>
             </div>
@@ -202,14 +235,14 @@
                             <label>Nombre Completo *</label>
                             <input type="text" name="nombre" id="nuevoNombre" class="form-control" required>
                         </div>
-<div class="mb-3">
-    <label class="form-label">Teléfono</label>
-    <input type="text" name="telefono" id="nuevoTelefono" class="form-control" placeholder="0000-0000" inputmode="numeric" maxlength="9" oninput="formatoTel(this)">
-</div>
-<div class="mb-3">
-    <label class="form-label">DUI</label>
-    <input type="text" name="dui" id="nuevoDui" class="form-control" placeholder="00000000-0" inputmode="numeric" maxlength="10" oninput="formatoDui(this)">
-</div>
+                        <div class="mb-3">
+                            <label class="form-label">Teléfono *</label>
+                            <input required type="text" name="telefono" id="nuevoTelefono" class="form-control" placeholder="0000-0000" inputmode="numeric" maxlength="9" oninput="formatoTel(this)">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">DUI *</label>
+                            <input required type="text" name="dui" id="nuevoDui" class="form-control" placeholder="00000000-0" inputmode="numeric" maxlength="10" oninput="formatoDui(this)">
+                        </div>
                         <button type="submit" class="btn btn-success w-100 mt-3">Guardar y Seleccionar</button>
                     </form>
                 </div>
@@ -329,13 +362,18 @@
                         subtotalGlobal += subtotalLinea;
                         ivaGlobal += ivaLinea;
 
+                        // --- AQUÍ ESTÁ EL BLINDAJE VISUAL DEL STOCK ---
+                        // Si es un servicio no le ponemos límite, si es producto le ponemos límite maximo = stock_actual
+                        let esServicio = (item.es_servicio == 1 || item.es_servicio === true);
+                        let maxAtributo = esServicio ? "" : `max="${item.stock_actual}"`;
+
                         // Dibujar tabla
                         cuerpo.innerHTML += `
                             <tr>
                                 <td class="fw-bold">${item.codigo}</td>
                                 <td class="text-start">${item.nombre}</td>
                                 <td>
-                                    <input type="number" class="form-control form-control-sm text-center mx-auto" style="width: 70px;" value="${item.cantidad}" min="1" onchange="cambiarCantidad(${index}, this.value)">
+                                    <input type="number" class="form-control form-control-sm text-center mx-auto" style="width: 70px;" value="${item.cantidad}" min="1" ${maxAtributo} onchange="cambiarCantidad(${index}, this.value)">
                                 </td>
                                 <td>$${precioUnitarioSinIva.toFixed(2)}</td>
                                 <td class="fw-bold">$${(subtotalLinea + ivaLinea).toFixed(2)}</td>
@@ -365,22 +403,39 @@
                 document.getElementById('inputIva').value = ivaGlobal.toFixed(2);
                 document.getElementById('inputTotal').value = totalPagar.toFixed(2);
             }
+            // --- 2. Búsqueda por AJAX (Lector de barras, Código o Nombre) ---
 
-            // --- 2. Búsqueda por AJAX (Lector de barras o Enter) ---
-            window.buscarProducto = function(codigo) {
-                if(!codigo) return;
+            window.buscarProducto = function(termino) {
+                if(!termino) return;
                 
-                fetch(`/ventas/buscar-producto/${codigo}`)
+                fetch(`/ventas/buscar-producto/${encodeURIComponent(termino)}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.existe) {
                             let prod = data.producto;
                             
-                            // Revisar si ya está en el carrito para sumar +1
+                            // Determinamos si es un servicio (para ignorar el stock)
+                            let esServicio = (prod.es_servicio == 1 || prod.es_servicio === true);
+                            
                             let existeEnCarrito = carrito.findIndex(p => p.id === prod.id);
+                            
                             if (existeEnCarrito !== -1) {
+                                // Si YA ESTÁ en el carrito, revisamos si sumar 1 excede el stock_actual
+                                // OJO: Aquí estaba el error, ahora dice prod.stock_actual
+                                if (!esServicio && carrito[existeEnCarrito].cantidad >= prod.stock_actual) {
+                                    Swal.fire('⚠️ Stock Insuficiente', `Solo tienes ${prod.stock_actual} unidades de "${prod.nombre}" en bodega. No puedes agregar más.`, 'warning');
+                                    inputCodigo.value = '';
+                                    return; // Cortamos la ejecución aquí, no se agrega
+                                }
                                 carrito[existeEnCarrito].cantidad += 1;
                             } else {
+                                // Si ES NUEVO en el carrito, revisamos si de casualidad el stock_actual es 0
+                                // OJO: Aquí también ahora dice prod.stock_actual
+                                if (!esServicio && prod.stock_actual <= 0) {
+                                    Swal.fire('❌ Agotado', `El producto "${prod.nombre}" se ha quedado sin stock.`, 'error');
+                                    inputCodigo.value = '';
+                                    return; // Cortamos la ejecución
+                                }
                                 prod.cantidad = 1;
                                 carrito.push(prod);
                             }
@@ -392,8 +447,9 @@
                             Swal.fire('No encontrado', 'El código no existe o el producto está inactivo.', 'error');
                             inputCodigo.select();
                         }
-                    });
-            }
+                    })
+                    .catch(error => console.error('Error en búsqueda:', error));
+            }   
 
             // Eventos del input buscar
             document.getElementById('btnBuscar').addEventListener('click', () => buscarProducto(inputCodigo.value));
@@ -405,9 +461,21 @@
             });
 
             // Funciones globales para que la tabla las llame
+            // --- Cambio manual de cantidad en el carrito ---
             window.cambiarCantidad = function(index, nuevaCantidad) {
-                if (nuevaCantidad > 0) {
-                    carrito[index].cantidad = parseInt(nuevaCantidad);
+                let cant = parseInt(nuevaCantidad);
+                let item = carrito[index];
+                
+                if (cant > 0) {
+                    let esServicio = (item.es_servicio == 1 || item.es_servicio === true);
+                    
+                    // Verificamos si el número digitado supera el stock en bodega
+                    if (!esServicio && cant > item.stock_actual) {
+                        Swal.fire('⚠️ Stock Excedido', `Trataste de poner ${cant}, pero solo hay ${item.stock_actual} disponibles.`, 'warning');
+                        item.cantidad = item.stock_actual; // Lo forzamos a bajar al máximo permitido
+                    } else {
+                        item.cantidad = cant;
+                    }
                     renderizarCarrito();
                 }
             }
