@@ -10,7 +10,7 @@
                 <p class="text-muted">Gestiona los repuestos, accesorios y servicios del taller.</p>
             </div>
             <div class="col-md-4 text-end">
-            <a href="{{ route('inventario.create') }}" class="btn btn-success fw-bold">+ Nuevo Producto</a>
+            <a href="{{ route('inventario.create') }}" class="btn btn-success fw-bold">+ Nuevo</a>
             </div>
         </div>
         

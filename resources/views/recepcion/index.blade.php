@@ -7,13 +7,13 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="text-primary fw-bold mb-0">Órdenes de Taller</h2>
             <a href="{{ route('recepcion.create') }}" class="btn btn-primary fw-bold">
-                <i class="fas fa-plus"></i> Nueva Recepción
+                <i class="fas fa-plus"></i> Nuevo
             </a>
         </div>
 
         <div class="mb-3 d-flex justify-content-end">
             <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosAvanzados" aria-expanded="false" aria-controls="filtrosAvanzados">
-                <i class="fas fa-search"></i> Filtros de Búsqueda
+                <i class="fas fa-search"></i> Filtros
             </button>
         </div>
 

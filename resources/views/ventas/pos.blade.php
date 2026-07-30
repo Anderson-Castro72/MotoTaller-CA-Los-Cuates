@@ -42,7 +42,7 @@
             
             <label class="form-label"><strong>Seleccionar Cliente:</strong></label>
             <div class="d-flex gap-2 mb-4">
-                <div class="col-lg-7">
+                <div class="col-lg-8">
                     <select name="cliente_id" id="clienteSelect" form="formVenta" class="form-select select2" required>
                         <option value="1">VENTA DE MOSTRADOR (Consumidor Final)</option>
                         
@@ -59,7 +59,7 @@
                 </div>
                 <div>
                     <button type="button" class="btn btn-primary h-100" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
-                        <i class="fas fa-plus"></i> Nuevo Cliente
+                        <i class="fas fa-plus"></i> 
                     </button>
                 </div>
             </div>
@@ -73,7 +73,7 @@
                         <label class="form-label fw-bold text-success"> Buscar Productos</label>
                         <div class="input-group mb-2">
                             <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Código de producto" autofocus>
-                            <button class="btn btn-success" type="button" id="btnBuscar">Agregar ➕</button>
+                            <button class="btn btn-success" type="button" id="btnBuscar">➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
                             <i class="fas fa-camera"></i> Escanear
@@ -262,6 +262,66 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+
+            // --- ALERTA DE ÉXITO AL PROCESAR COBRO Y AUTO-IMPRESIÓN ---
+            @if(session('success'))
+                @if(session('tipo_documento') == 'Ticket')
+                    
+                    // 1. AUTO-IMPRIMIR SILENCIOSAMENTE EN SEGUNDO PLANO
+                    fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
+                        .catch(error => console.error('Error al auto-imprimir:', error));
+                    
+                    // 2. MOSTRAR ALERTA CON BOTÓN DE REIMPRESIÓN
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Cobro Procesado con Éxito!',
+                        text: 'Ticket impreso automáticamente.',
+                        showCancelButton: true,
+                        confirmButtonText: 'Reimprimir',
+                        cancelButtonText: 'Aceptar',
+                        confirmButtonColor: '#0d6efd',
+                        cancelButtonColor: '#198754',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Si presiona "Reimprimir", mandamos otra orden de impresión silenciosa
+                            Swal.fire({
+                                title: 'Enviando a impresora...',
+                                text: 'Por favor espere.',
+                                allowOutsideClick: false,
+                                didOpen: () => { Swal.showLoading() }
+                            });
+
+                            fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
+                                .then(() => {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: '¡Reimpreso!',
+                                        text: 'El ticket se volvió a imprimir.',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                })
+                                .catch(() => {
+                                    Swal.fire('Error', 'No se pudo comunicar con la impresora', 'error');
+                                });
+                        }
+                    });
+
+                @else
+                    // Para Facturas o Crédito Fiscal (FCF / CCF)
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Cobro Procesado!',
+                        text: 'Documento {{ session('tipo_documento') }} registrado. {{ session('success') }}',
+                        confirmButtonColor: '#198754'
+                    });
+                @endif
+            @endif
+
+        });
+
         function formatoTel(input) {
         let valor = input.value.replace(/\D/g, '');
         if (valor.length > 4) {

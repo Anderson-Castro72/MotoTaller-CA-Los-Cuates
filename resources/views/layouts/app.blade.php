@@ -17,7 +17,7 @@
 
     <style>
         /* =========================================
-           DISEÑO DEL MENÚ LATERAL (SIDEBAR)
+           DISEÑO DEL MENÚ LATERAL (SIDEBAR) - ESTABLE
            ========================================= */
         body {
             height: 100vh; /* Fija la altura exactamente al 100% de la pantalla */
@@ -77,6 +77,21 @@
            COMPORTAMIENTO EN TELÉFONOS (MÓVILES)
            ========================================= */
         @media (max-width: 768px) {
+            /* Permitimos que el body crezca de manera natural en móviles para evitar bloqueos */
+            body {
+                height: auto !important;
+                overflow: auto !important;
+            }
+            .wrapper {
+                height: auto !important;
+                overflow: visible !important;
+            }
+            .content-area {
+                overflow-y: visible !important;
+                /* Agregamos un respiro abajo para que el botón de facturar nunca quede tapado */
+                padding-bottom: 120px !important; 
+            }
+
             .sidebar {
                 position: fixed;
                 height: 100%;
@@ -130,7 +145,7 @@
                 <i class="fas fa-clipboard-list me-3"></i> Órdenes de Taller
             </a>
             
-            <a href="#" class="nav-link-side text-success fw-bold"> <i class="fas fa-shopping-cart me-3"></i> Punto de Venta
+            <a href="{{ route('ventas.directa') }}"  class="nav-link-side text-success fw-bold"> <i class="fas fa-shopping-cart me-3"></i> Punto de Venta
             </a>
             <a href="{{ route('inventario.index') }}" class="nav-link-side">
                 <i class="fas fa-boxes me-3"></i> Inventario (Repuestos)

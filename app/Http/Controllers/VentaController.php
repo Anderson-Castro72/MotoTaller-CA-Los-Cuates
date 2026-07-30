@@ -98,7 +98,7 @@ class VentaController extends Controller
             DB::commit();
 
             // Redirigimos al inicio con el mensaje, el ID del ticket y el tipo de documento
-            return redirect()->route('recepcion.index')
+            return redirect()->route('ventas.directa')
                 ->with('success', '¡Cobro procesado exitosamente! El inventario ha sido descontado.')
                 ->with('ticket_id', $venta->id)
                 ->with('tipo_documento', $venta->tipo_documento);
