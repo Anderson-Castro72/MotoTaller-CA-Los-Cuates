@@ -1,14 +1,9 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recepción - MotoTaller</title>
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
+@extends('layouts.app')
+
+@section('title', 'Nueva Recepción - MotoTaller')
+
+@section('content')
+    <div class="container mt-4">
         <h2 class="text-primary fw-bold mb-4">Recepción de Motocicleta</h2>
         <p class="text-muted">Ingresa el DUI o la Placa para autocompletar la información.</p>
 
@@ -40,7 +35,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Teléfono *</label>
-                                <input type="text" inputmode="numeric" name="telefono" id="telefono_cliente" class="form-control inputs-cliente"  required maxlength="9" pattern="^\d{4}-\d{4}$">                            </div>
+                                <input type="text" inputmode="numeric" name="telefono" id="telefono_cliente" class="form-control inputs-cliente" required maxlength="9" pattern="^\d{4}-\d{4}$">                            </div>
                         </div>
                     </div>
                 </div>
@@ -82,6 +77,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="row">
                 <div class="col-12 mb-4">
                     <div class="card shadow-sm border-warning">
@@ -153,7 +149,9 @@
             </div>
         </form>
     </div>
+@endsection
 
+@push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             
@@ -172,41 +170,28 @@
 
             // 1. Formateo estricto en tiempo real
             inputDui.addEventListener('input', function(e) {
-                // Quitamos cualquier letra o símbolo (solo dejamos números)
                 let valor = this.value.replace(/\D/g, ''); 
-                
-                // Limitamos a un máximo de 9 números puros (8 del cuerpo + 1 verificador)
                 if (valor.length > 9) {
                     valor = valor.substring(0, 9);
                 }
-                
-                // Inyectamos el guion justo antes del último dígito
                 if (valor.length > 8) {
                     valor = valor.substring(0, 8) + '-' + valor.substring(8);
                 }
-                
-                // Devolvemos el valor formateado a la casilla
                 this.value = valor;
             });
 
-            // 1. Formateo estricto del Teléfono en tiempo real (Ej: 1234-5678)
+            // 1. Formateo estricto del Teléfono en tiempo real
             inputTelefono.addEventListener('input', function(e) {
-                // Quitamos cualquier letra o símbolo
                 let valor = this.value.replace(/\D/g, ''); 
-                
-                // Limitamos a un máximo de 8 números puros
                 if (valor.length > 8) {
                     valor = valor.substring(0, 8);
                 }
-                
-                // Inyectamos el guion justo después del cuarto dígito
                 if (valor.length > 4) {
                     valor = valor.substring(0, 4) + '-' + valor.substring(4);
                 }
-                
-                // Devolvemos el valor formateado a la casilla
                 this.value = valor;
             });
+
             inputDui.addEventListener('change', async function() {
                 const dui = this.value.trim();
                 if(!dui) return;
@@ -214,34 +199,28 @@
                 statusCliente.innerHTML = '<span class="text-primary">Buscando en base de datos...</span>';
 
                 try {
-                    // Petición AJAX al controlador que crearemos luego
                     let response = await fetch(`/recepcion/verificar-cliente/${dui}`);
                     let data = await response.json();
 
                     if(data.existe) {
                         statusCliente.innerHTML = '<span class="text-success fw-bold">✓ Cliente encontrado</span>';
-                        // Rellenamos los campos
                         inputClienteId.value = data.cliente.id;
                         inputNombre.value = data.cliente.nombre;
                         inputTelefono.value = data.cliente.telefono;
 
-                        // Bloqueamos los campos visual y funcionalmente
                         inputsCliente.forEach(input => input.setAttribute('readonly', true));
                         inputsCliente.forEach(input => input.classList.add('bg-light', 'text-muted'));
 
-                        // ¡Aparece el Switch para editar!
                         divSwitchEditar.classList.remove('d-none');
-                        switchEditar.checked = false; // Se asegura de iniciar apagado
+                        switchEditar.checked = false; 
                         
                         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Cliente Autocompletado', showConfirmButton: false, timer: 1500 });
                     } else {
-                        // Si es nuevo cliente
                         statusCliente.innerHTML = '<span class="text-warning fw-bold">Nuevo cliente</span>';
                         inputClienteId.value = '';
                         inputNombre.value = '';
                         inputTelefono.value = '';
                         
-                        // Habilitamos los campos y ocultamos el switch
                         inputsCliente.forEach(input => input.removeAttribute('readonly'));
                         inputsCliente.forEach(input => input.classList.remove('bg-light', 'text-muted'));
                         divSwitchEditar.classList.add('d-none');
@@ -251,19 +230,15 @@
                 }
             });
 
-            // Vigilar cuando el usuario activa/desactiva el Switch de edición
             switchEditar.addEventListener('change', function() {
                 if(this.checked) {
-                    // Activar Edición
                     inputsCliente.forEach(input => input.removeAttribute('readonly'));
                     inputsCliente.forEach(input => input.classList.remove('bg-light', 'text-muted'));
                 } else {
-                    // Bloquear Edición de nuevo
                     inputsCliente.forEach(input => input.setAttribute('readonly', true));
                     inputsCliente.forEach(input => input.classList.add('bg-light', 'text-muted'));
                 }
             });
-
 
             // =========================================
             // LÓGICA INTELIGENTE DE LA MOTO (PLACA)
@@ -279,7 +254,7 @@
 
             inputPlaca.addEventListener('change', async function() {
                 const placa = this.value.trim().toUpperCase();
-                this.value = placa; // Convertimos forzosamente a mayúsculas
+                this.value = placa; 
                 if(!placa) return;
 
                 statusMoto.innerHTML = '<span class="text-primary">Buscando en base de datos...</span>';
@@ -296,7 +271,6 @@
                         inputColor.value = data.moto.color;
                         inputAnio.value = data.moto.anio || '';
 
-                        // Aquí bloqueamos los campos PERMANENTEMENTE (Sin switch)
                         inputsMoto.forEach(input => input.setAttribute('readonly', true));
                         inputsMoto.forEach(input => input.classList.add('bg-light', 'text-muted'));
 
@@ -317,12 +291,15 @@
                 }
             });
 
-            // 2. Validación final antes de guardar (DUI y Teléfono)
+            // =========================================
+            // VALIDACIÓN FINAL AL ENVIAR FORMULARIO
+            // =========================================
+            const formRecepcion = document.getElementById('formRecepcion');
+
             formRecepcion.addEventListener('submit', function(e) {
                 const duiActual = inputDui.value;
                 const telefonoActual = inputTelefono.value;
                 
-                // Validar DUI
                 if (duiActual.length > 0 && duiActual.length !== 10) {
                     e.preventDefault(); 
                     Swal.fire({
@@ -332,10 +309,9 @@
                         confirmButtonColor: '#0d6efd'
                     });
                     inputDui.focus();
-                    return; // Detenemos la ejecución aquí
+                    return; 
                 }
 
-                // Validar Teléfono
                 if (telefonoActual.length > 0 && telefonoActual.length !== 9) {
                     e.preventDefault(); 
                     Swal.fire({
@@ -348,9 +324,7 @@
                 }
             });
 
-        });
-
-        // Mostrar alerta de éxito al recargar la página tras guardar
+            // Mostrar alerta de éxito al recargar la página tras guardar
             @if(session('success'))
                 Swal.fire({
                     icon: 'success',
@@ -359,6 +333,6 @@
                     confirmButtonColor: '#198754'
                 });
             @endif
+        });
     </script>
-</body>
-</html>
+@endpush

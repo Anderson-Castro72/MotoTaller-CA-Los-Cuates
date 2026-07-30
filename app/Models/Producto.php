@@ -24,4 +24,11 @@ class Producto extends Model
         'es_servicio',
         'activo'
     ];
+    // Relación Many-to-Many con Combos
+    public function combos()
+    {
+        return $this->belongsToMany(Combo::class, 'combo_producto')
+                    ->withPivot('cantidad', 'precio_en_combo')
+                    ->withTimestamps();
+    }
 }

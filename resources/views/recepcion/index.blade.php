@@ -1,24 +1,19 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Recepciones - MotoTaller</title>
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
+@extends('layouts.app')
+
+@section('title', 'Recepciones - MotoTaller')
+
+@section('content')
+    <div class="container mt-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="text-primary fw-bold mb-0">Órdenes de Taller</h2>
             <a href="{{ route('recepcion.create') }}" class="btn btn-primary fw-bold">
-                + Nueva Recepción
+                <i class="fas fa-plus"></i> Nueva Recepción
             </a>
         </div>
 
- <div class="mb-3 d-flex justify-content-end">
+        <div class="mb-3 d-flex justify-content-end">
             <button class="btn btn-outline-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#filtrosAvanzados" aria-expanded="false" aria-controls="filtrosAvanzados">
-                🔍 Filtros de Búsqueda
+                <i class="fas fa-search"></i> Filtros de Búsqueda
             </button>
         </div>
 
@@ -93,7 +88,6 @@
                                     </td>
                                     <td>
                                         {{ $orden->cliente->nombre }}<br>
-                                        
                                     </td>
                                     <td>
                                         @php
@@ -109,10 +103,10 @@
                                     </td>
                                     <td>
                                         <button type="button" class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#modalDetalles{{ $orden->id }}" title="Ver Detalles">👁️</button>
-                                        
                                         <a href="{{ route('ventas.pos', $orden->id) }}" class="btn btn-sm btn-success" title="Facturar / POS">💲</a>
                                     </td>
                                 </tr>
+                                
                                 <div class="modal fade text-start" id="modalDetalles{{ $orden->id }}" tabindex="-1" aria-labelledby="modalLabel{{ $orden->id }}" aria-hidden="true">
                                     <div class="modal-dialog modal-lg modal-dialog-centered">
                                         <div class="modal-content">
@@ -188,64 +182,64 @@
             <div class="text-muted small">
                 Mostrando del <span class="fw-bold">{{ $ordenes->firstItem() ?? 0 }}</span> al <span class="fw-bold">{{ $ordenes->lastItem() ?? 0 }}</span> de <span class="fw-bold text-primary">{{ $ordenes->total() }}</span> registros
             </div>
-            
             <div>
                 {{ $ordenes->appends(request()->query())->links() }}
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+@endsection
+
+@push('scripts')
 <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const fechaInicio = document.getElementById('fecha_inicio');
-            const fechaFin = document.getElementById('fecha_fin');
-            const hoy = "{{ date('Y-m-d') }}"; // Fecha máxima permitida (hoy)
+    document.addEventListener('DOMContentLoaded', function() {
+        const fechaInicio = document.getElementById('fecha_inicio');
+        const fechaFin = document.getElementById('fecha_fin');
+        const hoy = "{{ date('Y-m-d') }}"; // Fecha máxima permitida (hoy)
 
-            // Cuando cambia la Fecha de Inicio
-            fechaInicio.addEventListener('change', function() {
-                if(this.value) {
-                    // La fecha de fin no puede ser menor a la de inicio
-                    fechaFin.min = this.value;
-                } else {
-                    fechaFin.min = ""; // Limpiar restricción si borran la fecha
-                }
-            });
-
-            // Cuando cambia la Fecha de Fin
-            fechaFin.addEventListener('change', function() {
-                if(this.value) {
-                    // La fecha de inicio no puede ser mayor a la fecha de fin elegida
-                    fechaInicio.max = this.value;
-                } else {
-                    // Si borran la fecha fin, restablecer al máximo de hoy
-                    fechaInicio.max = hoy; 
-                }
-            });
-
-            @if(session('success'))
-                @if(session('tipo_documento') == 'Ticket')
-                    // 1. Es TICKET INTERNO: Abre la ventana de impresión automáticamente
-                   window.location.href = "{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}";
-                    
-                    // 2. Muestra un mensaje breve que se cierra solo en 2 segundos (sin molestar al cajero)
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Ticket Generado!',
-                        text: '{{ session('success') }}',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-                @else
-                    // Es FCF o CCF: Solo muestra la alerta de éxito tradicional
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Cobro Procesado!',
-                        text: 'Documento {{ session('tipo_documento') }} registrado. {{ session('success') }}',
-                        confirmButtonColor: '#198754'
-                    });
-                @endif
-            @endif
+        // Cuando cambia la Fecha de Inicio
+        fechaInicio.addEventListener('change', function() {
+            if(this.value) {
+                // La fecha de fin no puede ser menor a la de inicio
+                fechaFin.min = this.value;
+            } else {
+                fechaFin.min = ""; // Limpiar restricción si borran la fecha
+            }
         });
-    </script>
-</html>
+
+        // Cuando cambia la Fecha de Fin
+        fechaFin.addEventListener('change', function() {
+            if(this.value) {
+                // La fecha de inicio no puede ser mayor a la fecha de fin elegida
+                fechaInicio.max = this.value;
+            } else {
+                // Si borran la fecha fin, restablecer al máximo de hoy
+                fechaInicio.max = hoy; 
+            }
+        });
+
+        @if(session('success'))
+            @if(session('tipo_documento') == 'Ticket')
+                // 1. Es TICKET INTERNO: Abre la ventana de impresión automáticamente
+                window.location.href = "{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}";
+                
+                // 2. Muestra un mensaje breve que se cierra solo en 2 segundos (sin molestar al cajero)
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Ticket Generado!',
+                    text: '{{ session('success') }}',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            @else
+                // Es FCF o CCF: Solo muestra la alerta de éxito tradicional
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Cobro Procesado!',
+                    text: 'Documento {{ session('tipo_documento') }} registrado. {{ session('success') }}',
+                    confirmButtonColor: '#198754'
+                });
+            @endif
+        @endif
+    });
+</script>
+@endpush

@@ -5,6 +5,7 @@ use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\RecepcionController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ComboController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -16,8 +17,6 @@ Route::resource('inventario', ProductoController::class);
 Route::get('/recepcion', [RecepcionController::class, 'index'])->name('recepcion.index');
 Route::get('/recepcion/create', [RecepcionController::class, 'create'])->name('recepcion.create');
 Route::post('/recepcion/guardar', [RecepcionController::class, 'store'])->name('recepcion.store');
-
-// Rutas invisibles para AJAX (Buscadores)
 Route::get('/recepcion/verificar-cliente/{dui}', [RecepcionController::class, 'verificarCliente']);
 Route::get('/recepcion/verificar-moto/{placa}', [RecepcionController::class, 'verificarMoto']);
 
@@ -29,3 +28,5 @@ Route::get('/ventas/imprimir-red/{id}', [VentaController::class, 'imprimirTicket
 Route::get('/ventas/directa', [VentaController::class, 'posDirecto'])->name('ventas.directa');
 
 Route::post('/clientes/rapido', [ClienteController::class, 'storeRapido'])->name('clientes.rapido');
+
+Route::resource('combos', ComboController::class);

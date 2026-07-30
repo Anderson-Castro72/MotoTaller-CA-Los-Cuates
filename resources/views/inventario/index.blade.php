@@ -1,15 +1,9 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-        <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario - MotoTaller</title>
-    @vite(['resources/sass/app.scss', 'resources/js/app.js'])
-</head>
-<body class="bg-light">
-    <div class="container mt-5">
+@extends('layouts.app')
+
+@section('title', 'Inventario - MotoTaller')
+
+@section('content')
+    <div class="container mt-4">
         <div class="row mb-4">
             <div class="col-md-8">
                 <h2 class="text-primary fw-bold">Catálogo de Inventario</h2>
@@ -17,7 +11,10 @@
             </div>
             <div class="col-md-4 text-end">
             <a href="{{ route('inventario.create') }}" class="btn btn-success fw-bold">+ Nuevo Producto</a>
-            </div><div class="card shadow-sm mb-4">
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
             <div class="card-body">
                 <form action="{{ route('inventario.index') }}" method="GET" class="row g-3 align-items-center">
                 <div class="col-md-6">
@@ -40,7 +37,6 @@
                 </form>
             </div>
         </div>
-        </div>
 
         <div class="card shadow-sm">
             <div class="card-body">
@@ -61,7 +57,7 @@
                             <tr>
                                 <td>{{ $producto->codigo ?? 'N/A' }}</td>
                                 <td>{{ $producto->nombre }}</td>
-                                <td>${{ number_format($producto->precio_sin_iva, 2) }}</td>
+                                <td>${{ number_format($producto->precio, 2) }}</td>
                                 <td>
                                     @if($producto->es_servicio)
                                         <span class="badge bg-info">Servicio</span>
@@ -101,35 +97,40 @@
             </div>
         </div>
     </div>
+@endsection
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const btnScan = document.getElementById('btn-scan-buscar');
-        const readerDiv = document.getElementById('reader-buscar');
-        const inputBuscar = document.getElementById('buscar_input');
-        let html5QrcodeScanner;
+@push('scripts')
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-        if(btnScan) {
-            btnScan.addEventListener('click', function() {
-                readerDiv.style.display = 'block';
-                html5QrcodeScanner = new Html5QrcodeScanner(
-                    "reader-buscar", { fps: 10, qrbox: {width: 250, height: 100} }, false);
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnScan = document.getElementById('btn-scan-buscar');
+            const readerDiv = document.getElementById('reader-buscar');
+            const inputBuscar = document.getElementById('buscar_input');
+            let html5QrcodeScanner;
 
-                html5QrcodeScanner.render(function(decodedText) {
-                    // 1. Coloca el código escaneado en el buscador
-                    inputBuscar.value = decodedText;
-                    // 2. Apaga la cámara
-                    html5QrcodeScanner.clear();
-                    readerDiv.style.display = 'none';
-                    // 3. ¡Magia! Envía el formulario automáticamente para filtrar la tabla
-                    inputBuscar.closest('form').submit();
-                }, function(error) {
-                    // Ignorar errores continuos de búsqueda de enfoque
+            if(btnScan) {
+                btnScan.addEventListener('click', function() {
+                    readerDiv.style.display = 'block';
+                    html5QrcodeScanner = new Html5QrcodeScanner(
+                        "reader-buscar", { fps: 10, qrbox: {width: 250, height: 100} }, false);
+
+                    html5QrcodeScanner.render(function(decodedText) {
+                        // 1. Coloca el código escaneado en el buscador
+                        inputBuscar.value = decodedText;
+                        // 2. Apaga la cámara
+                        html5QrcodeScanner.clear();
+                        readerDiv.style.display = 'none';
+                        // 3. ¡Magia! Envía el formulario automáticamente para filtrar la tabla
+                        inputBuscar.closest('form').submit();
+                    }, function(error) {
+                        // Ignorar errores continuos de búsqueda de enfoque
+                    });
                 });
-            });
-        }
-    });
-    // 3. Confirmación Inteligente para cambiar estado
+            }
+        });
+        
+        // 3. Confirmación Inteligente para cambiar estado
         const botonesEstado = document.querySelectorAll('.btn-cambiar-estado');
         
         botonesEstado.forEach(boton => {
@@ -154,6 +155,5 @@
                 });
             });
         });
-</script>
-</body>
-</html>
+    </script>
+@endpush

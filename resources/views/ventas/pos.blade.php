@@ -1,27 +1,35 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Punto de Venta - MotoTaller</title>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+@extends('layouts.app')
+
+@section('title', 'Punto de Venta - MotoTaller')
+
+@push('css')
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
+        /* Estilos específicos solo para esta pantalla */
         .tabla-carrito th, .tabla-carrito td { vertical-align: middle; }
         .resumen-card { position: sticky; top: 20px; }
+        
+        /* Ajuste para que Select2 se vea bien con Bootstrap */
+        .select2-container .select2-selection--single {
+            height: 38px !important;
+            border: 1px solid #ced4da !important;
+        }
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 38px !important;
+        }
     </style>
-</head>
-<body class="bg-light">
-    <div class="container-fluid py-4">
+@endpush
+
+@section('content')
+    <div class="container-fluid py-2">
         
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h3 class="text-primary fw-bold mb-0">🛒 Punto de Venta (POS)</h3>
-                </div>
-                    <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
-                </div>
+            </div>
+            <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
+        </div>
+        
         @if($orden)
             <h5 class="card-title">Orden #{{ $orden->id }}</h5>
             <p class="mb-1"><strong>Cliente:</strong> {{ $orden->cliente->nombre }}</p>
@@ -33,9 +41,7 @@
             <h5 class="card-title text-success mb-3"> Venta Directa (Mostrador)</h5>
             
             <label class="form-label"><strong>Seleccionar Cliente:</strong></label>
-            
-            <div class="d-flex gap-2">
-                
+            <div class="d-flex gap-2 mb-4">
                 <div class="col-lg-7">
                     <select name="cliente_id" id="clienteSelect" form="formVenta" class="form-select select2" required>
                         <option value="1">VENTA DE MOSTRADOR (Consumidor Final)</option>
@@ -51,13 +57,11 @@
                         @endforeach
                     </select>
                 </div>
-                
                 <div>
                     <button type="button" class="btn btn-primary h-100" data-bs-toggle="modal" data-bs-target="#modalNuevoCliente">
-                        <i class="fas fa-plus"></i> Nuevo
+                        <i class="fas fa-plus"></i> Nuevo Cliente
                     </button>
                 </div>
-                
             </div>
         @endif    
 
@@ -71,7 +75,9 @@
                             <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Código de producto" autofocus>
                             <button class="btn btn-success" type="button" id="btnBuscar">Agregar ➕</button>
                         </div>
-                        <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">Escanear</button>
+                        <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
+                            <i class="fas fa-camera"></i> Escanear
+                        </button>
                         <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
                             📦 Ver Catálogo
                         </button>
@@ -154,7 +160,8 @@
     </div>
 
     <div class="modal fade" id="modalServicios" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-scrollable modal-lg"> <div class="modal-content">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg"> 
+            <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title fw-bold">📦 Catálogo de Productos y Servicios</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -199,7 +206,6 @@
                                     </div>
                                     <div class="text-end">
                                         <span class="d-block text-success fw-bold mb-1">${{ number_format($producto->precio, 2) }}</span>
-                                        
                                         <button type="button" class="btn btn-sm btn-primary" data-bs-dismiss="modal" 
                                             onclick="buscarProducto('{{ $producto->codigo }}')" 
                                             {{ $producto->stock_actual <= 0 ? 'disabled' : '' }}>
@@ -249,13 +255,13 @@
             </div>
         </div>
     </div>
+@endsection
 
+@push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script>
+<script>
         function formatoTel(input) {
         let valor = input.value.replace(/\D/g, '');
         if (valor.length > 4) {
@@ -543,6 +549,5 @@
                 });
             }
         });
-    </script>
-</body>
-</html>
+</script>
+@endpush
