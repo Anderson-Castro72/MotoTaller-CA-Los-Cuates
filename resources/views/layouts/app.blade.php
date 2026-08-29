@@ -122,22 +122,40 @@
 
     <nav class="navbar navbar-dark bg-dark border-bottom border-secondary shadow-sm">
         <div class="container-fluid">
+            @auth
             <button class="btn btn-dark text-white me-2 border-0" id="btnToggleMenu" title="Ocultar/Mostrar Menú">
                 <i class="fas fa-bars fs-4"></i>
             </button>
+            @endauth
+            <a class="navbar-brand fw-bold me-auto" href="/"> Taller Chito Aparicio "Los Cuates" </a>
             
-            <a class="navbar-brand fw-bold me-auto" href="/">🏍️ MotoTaller</a>
-            
-            <div class="text-white">
-                <i class="fas fa-user-circle fs-4"></i>
+            @auth
+            <div class="dropdown">
+                <a href="#" class="text-white text-decoration-none dropdown-toggle d-flex align-items-center" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-user-circle fs-4 me-2"></i>
+                    <span class="d-none d-md-inline fw-bold">{{ Auth::user()->name }}</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userMenu">
+                    <li>
+                        <a class="dropdown-item text-danger fw-bold" href="{{ route('logout') }}" 
+                           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            <i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
+                        </a>
+                    </li>
+                </ul>
+                <!-- Formulario oculto requerido por Laravel para cerrar sesión -->
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
+                    @csrf
+                </form>
             </div>
+            @endauth
         </div>
     </nav>
 
     <div class="wrapper position-relative">
         
         <div class="sidebar-overlay" id="overlayMenu"></div>
-
+@auth
         <aside class="sidebar py-3" id="menuLateral">
             <div class="text-muted small fw-bold px-4 mb-2 text-uppercase">Opciones</div>
             
@@ -158,8 +176,9 @@
             <a href="#" class="nav-link-side">
                 <i class="fas fa-chart-line me-3"></i> Reportes
             </a>
-        </aside>
 
+        </aside>
+@endauth
         <main class="content-area p-3 p-md-4">
             @yield('content')
         </main>

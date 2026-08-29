@@ -8,8 +8,16 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ComboController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect('/login');
 });
+
+
+Route::resource('combos', ComboController::class);
+Auth::routes();
+
+Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+// Rutas protegidas
+Route::middleware('auth')->group(function () {
 Route::get('/inventario/verificar-codigo/{codigo}', [ProductoController::class, 'verificarCodigo']);
 Route::resource('inventario', ProductoController::class);
 
@@ -28,5 +36,4 @@ Route::get('/ventas/imprimir-red/{id}', [VentaController::class, 'imprimirTicket
 Route::get('/ventas/directa', [VentaController::class, 'posDirecto'])->name('ventas.directa');
 
 Route::post('/clientes/rapido', [ClienteController::class, 'storeRapido'])->name('clientes.rapido');
-
-Route::resource('combos', ComboController::class);
+});
