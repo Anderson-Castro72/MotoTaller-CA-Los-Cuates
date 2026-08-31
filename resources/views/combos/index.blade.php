@@ -3,7 +3,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h3 class="text-primary fw-bold mb-0">📦 Gestión de Combos/Paquetes</h3>
         <a href="{{ route('combos.create') }}" class="btn btn-success">
-            <i class="fas fa-plus"></i> Crear Nuevo Combo
+            <i class="fas fa-plus"></i> Nuevo
         </a>
     </div>
 

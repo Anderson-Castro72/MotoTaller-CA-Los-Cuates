@@ -17,7 +17,7 @@
                             <div class="input-group">
                                 <input type="text" name="codigo" id="codigo_input" class="form-control" autofocus>
                                 <button type="button" class="btn btn-outline-secondary" id="btn-scan-camara">
-                                    📷 Escanear
+                                    Esc
                                 </button>
                             </div>
                             <div id="reader" width="100%" class="mt-2" style="display: none;"></div>
@@ -58,7 +58,7 @@
 
                     <div class="text-end">
                         <a href="{{ route('inventario.index') }}" class="btn btn-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-primary fw-bold">💾 Guardar Producto</button>
+                        <button type="submit" class="btn btn-primary fw-bold">Guardar</button>
                     </div>
                 </form>
             </div>

@@ -145,7 +145,7 @@
             </div>
 
             <div class="text-end mb-5">
-                <button type="submit" class="btn btn-success btn-lg fw-bold px-5">Crear Orden de Entrada</button>
+                <button type="submit" class="btn btn-success btn-lg fw-bold px-5">Guardar</button>
             </div>
         </form>
     </div>

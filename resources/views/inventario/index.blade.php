@@ -19,8 +19,8 @@
                 <form action="{{ route('inventario.index') }}" method="GET" class="row g-3 align-items-center">
                 <div class="col-md-6">
                         <div class="input-group">
-                            <input type="text" name="buscar" id="buscar_input" class="form-control" placeholder="Buscar por código o nombre..." value="{{ request('buscar') }}">
-                            <button type="button" class="btn btn-outline-secondary" id="btn-scan-buscar">📷 Escanear</button>
+                            <input type="text" name="buscar" id="buscar_input" class="form-control" placeholder="Buscar" value="{{ request('buscar') }}">
+                            <button type="button" class="btn btn-outline-secondary" id="btn-scan-buscar">Esc</button>
                         </div>
                         <div id="reader-buscar" width="100%" class="mt-2" style="display: none;"></div>
                     </div>

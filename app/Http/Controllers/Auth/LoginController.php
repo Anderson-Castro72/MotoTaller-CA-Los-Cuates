@@ -14,7 +14,7 @@ class LoginController extends Controller implements HasMiddleware
     /**
      * Dónde redirigir a los usuarios después de iniciar sesión.
      */
-    protected $redirectTo = '/inventario'; 
+    protected $redirectTo = '/home  '; 
 
     /**
      * Definir el middleware del controlador (Sintaxis Laravel 11).

@@ -59,7 +59,7 @@
 
                     <div class="text-end">
                         <a href="{{ route('inventario.index') }}" class="btn btn-secondary me-2">Cancelar</a>
-                        <button type="submit" class="btn btn-primary fw-bold">💾 Actualizar Producto</button>
+                        <button type="submit" class="btn btn-primary fw-bold">Actualizar</button>
                     </div>
                 </form>
             </div>

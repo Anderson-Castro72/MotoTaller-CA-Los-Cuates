@@ -76,10 +76,10 @@
                             <button class="btn btn-success" type="button" id="btnBuscar">➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
-                            <i class="fas fa-camera"></i> Escanear
+                            <i class="fas "></i> Esc
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
-                            📦 Ver Catálogo
+                            Catálogo
                         </button>
                         <div id="reader" width="100%" style="display: none;" class="mt-3"></div>
                     </div>

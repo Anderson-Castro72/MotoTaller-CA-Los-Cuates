@@ -34,14 +34,14 @@
                 </div>
 
                 <button type="button" class="btn btn-outline-primary mb-4" onclick="agregarFila()">
-                    ➕ Agregar Artículo al Combo
+                    ➕ Agregar
                 </button>
 
                 <hr>
                 
                 <div class="text-end">
                     <a href="{{ route('combos.index') }}" class="btn btn-secondary me-2">Cancelar</a>
-                    <button type="submit" class="btn btn-success btn-lg fw-bold">💾 Guardar Combo</button>
+                    <button type="submit" class="btn btn-success btn-lg fw-bold">Guardar</button>
                 </div>
             </form>
 

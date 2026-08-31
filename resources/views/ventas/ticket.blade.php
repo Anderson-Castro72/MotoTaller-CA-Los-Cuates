@@ -33,8 +33,8 @@
     </style>
 </head>
 <body onload="window.print()"> <div class="text-center">
-        <h3 class="bold" style="margin: 0;">TALLER "LOS CUATES"</h3>
-        <p style="margin: 2px 0;">De: Chito Aparicio</p>
+        <h3 class="bold" style="margin: 0;">TALLER CHITO APARICIO</h3>
+        <p style="margin: 2px 0;">Taller de Motos</p>
         <p style="margin: 2px 0;">Fecha: {{ $venta->created_at->format('d/m/Y H:i') }}</p>
         <p style="margin: 2px 0;">Ticket Interno #{{ strtoupper(substr($venta->id, -8)) }}</p>
     </div>
