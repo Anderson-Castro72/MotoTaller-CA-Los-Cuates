@@ -138,9 +138,9 @@ class VentaController extends Controller
             // 1. Encabezado Centrado
             $printer->setJustification(Printer::JUSTIFY_CENTER);
             $printer->setEmphasis(true); // Negrita
-            $printer->text("TALLER \"LOS CUATES\"\n");
+            $printer->text("TALLER DE MOTOS \"CHITO APARICIO\"\n");
             $printer->setEmphasis(false);
-            $printer->text("De: Chito Aparicio\n");
+            $printer->text("Los Cuates\n");
             $printer->text("Fecha: " . $venta->created_at->format('d/m/Y H:i') . "\n");
             $printer->text("Ticket Interno #" . strtoupper(substr($venta->id, -8)) . "\n");
             $printer->text($linea);
