@@ -13,6 +13,9 @@ Route::get('/', function () {
 
 
 Route::resource('combos', ComboController::class);
+Route::get('/combos/{combo}/edit', [App\Http\Controllers\ComboController::class, 'edit'])->name('combos.edit');
+Route::patch('/combos/{combo}/toggle', [App\Http\Controllers\ComboController::class, 'toggleStatus'])->name('combos.toggle');
+Route::put('/combos/{combo}', [App\Http\Controllers\ComboController::class, 'update'])->name('combos.update');
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');

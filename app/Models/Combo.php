@@ -9,7 +9,7 @@ class Combo extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'activo'];
+    protected $fillable = ['nombre', 'precio_total', 'activo'];
 
     // Relación Many-to-Many con Productos
     public function productos()

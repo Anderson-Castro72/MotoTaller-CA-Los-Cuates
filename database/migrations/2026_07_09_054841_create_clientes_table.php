@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -27,6 +28,14 @@ return new class extends Migration
             
             $table->timestamps();
         });
+
+        DB::table('clientes')->insert([
+            'nombre' => 'Consumidor Final',
+            'dui' => '00000000-0',
+            'telefono' => '0000-0000',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
