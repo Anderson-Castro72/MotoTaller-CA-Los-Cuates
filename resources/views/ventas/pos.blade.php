@@ -5,11 +5,8 @@
 @push('css')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
-        /* Estilos específicos solo para esta pantalla */
         .tabla-carrito th, .tabla-carrito td { vertical-align: middle; }
         .resumen-card { position: sticky; top: 20px; }
-        
-        /* Ajuste para que Select2 se vea bien con Bootstrap */
         .select2-container .select2-selection--single {
             height: 38px !important;
             border: 1px solid #ced4da !important;
@@ -33,7 +30,7 @@
         @if($orden)
             <h5 class="card-title">Orden #{{ $orden->id }}</h5>
             <p class="mb-1"><strong>Cliente:</strong> {{ $orden->cliente->nombre }}</p>
-            <p class="mb-0"><strong>Vehículo:</strong> {{ $orden->motocicleta->placa }} - {{ $orden->motocicleta->marca }}</p>
+            <p class="mb-0"><strong>Vehículo:</strong> {{ $orden->motocicleta->placa }} - {{$orden->motocicleta->marca }}</p>
             
             <input type="hidden" name="orden_entrada_id" form="formVenta" value="{{ $orden->id }}">
             <input type="hidden" name="cliente_id" form="formVenta" value="{{ $orden->cliente_id }}">
@@ -46,15 +43,15 @@
                     <select name="cliente_id" id="clienteSelect" form="formVenta" class="form-select select2" required>
                         <option value="1">VENTA DE MOSTRADOR (Consumidor Final)</option>
                         
-                        @foreach($clientes as $cliente)
+                        <?php foreach($clientes as$cliente): ?>
                             @if($cliente->id != 1)
                                 <option value="{{ $cliente->id }}">
                                     {{ $cliente->nombre }} 
-                                    {{ $cliente->telefono ? ' | Tel: '.$cliente->telefono : '' }} 
-                                    {{ $cliente->dui ? ' | DUI: '.$cliente->dui : '' }}
+                                    {{ $cliente->telefono ? ' \vert{} Tel: '.$cliente->telefono : '' }} 
+                                    {{ $cliente->dui ? ' \vert{} DUI: '.$cliente->dui : '' }}
                                 </option>
                             @endif
-                        @endforeach
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 <div>
@@ -65,22 +62,26 @@
             </div>
         @endif    
 
-
         <div class="row">
             <div class="col-lg-8">
                 <div class="card shadow-sm mb-3 border-success">
                     <div class="card-body">
-                        <label class="form-label fw-bold text-success"> Buscar Productos</label>
+                        <label class="form-label fw-bold text-success"> Buscar Productos o Servicios</label>
                         <div class="input-group mb-2">
                             <input type="text" id="codigo_producto" class="form-control form-control-lg border-success" placeholder="Código de producto" autofocus>
                             <button class="btn btn-success" type="button" id="btnBuscar">➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
-                            <i class="fas "></i> Esc
+                            <i class="fas "></i> Escáner
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
-                            Catálogo
+                             Catálogo
                         </button>
+                        <!-- BOTÓN DE COMBOS -->
+                        <button type="button" class="btn btn-sm btn-warning ms-2 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#modalCombos">
+                            Agregar Combo
+                        </button>
+
                         <div id="reader" width="100%" style="display: none;" class="mt-3"></div>
                     </div>
                 </div>
@@ -116,10 +117,21 @@
                         <h5 class="mb-0 fw-bold">🧾 Resumen de Venta</h5>
                     </div>
                     <div class="card-body">
+                        
+                        <!-- ÁREA DE COMBOS APLICADOS -->
+                        <div id="listaCombosAplicados" class="mb-3"></div>
+
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">Subtotal (Sin IVA):</span>
                             <span class="fw-bold">$<span id="txtSubtotal">0.00</span></span>
                         </div>
+                        
+                        <!-- FILA DE DESCUENTO -->
+                        <div class="d-flex justify-content-between mb-2 text-success" id="filaDescuento" style="display: none !important;">
+                            <span class="fw-bold">Descuento (Combos):</span>
+                            <span class="fw-bold">-$<span id="txtDescuento">0.00</span></span>
+                        </div>
+
                         <div class="d-flex justify-content-between mb-2">
                             <span class="text-muted">IVA (13%):</span>
                             <span class="fw-bold">$<span id="txtIva">0.00</span></span>
@@ -137,6 +149,7 @@
                                 <input type="hidden" name="cliente_id" value="{{ $orden->cliente_id }}">
                             @endif
                             <input type="hidden" name="subtotal_final" id="inputSubtotal">
+                            <input type="hidden" name="descuento_final" id="inputDescuentoHidden" value="0">
                             <input type="hidden" name="iva_final" id="inputIva">
                             <input type="hidden" name="total_final" id="inputTotal">
                             
@@ -159,11 +172,12 @@
         </div>
     </div>
 
+    <!-- MODAL CATÁLOGO NORMAL -->
     <div class="modal fade" id="modalServicios" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg"> 
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title fw-bold">📦 Catálogo de Productos y Servicios</h5>
+                    <h5 class="modal-title fw-bold"> Catálogo de Productos y Servicios</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3">
@@ -173,8 +187,7 @@
                     </div>
 
                     <div class="list-group list-group-flush" id="listaServicios">
-                        
-                        @foreach($servicios as $servicio)
+                        <?php foreach($servicios as$servicio): ?>
                             <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
                                 <div>
                                     <h6 class="mb-0 fw-bold nombre-servicio">{{ $servicio->nombre }}</h6>
@@ -188,10 +201,10 @@
                                     </button>
                                 </div>
                             </div>
-                        @endforeach
+                        <?php endforeach; ?>
 
                         @if(isset($productos))
-                            @foreach($productos as $producto)
+                            <?php foreach($productos as$producto): ?>
                                 <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
                                     <div>
                                         <h6 class="mb-0 fw-bold nombre-servicio">{{ $producto->nombre }}</h6>
@@ -213,13 +226,7 @@
                                         </button>
                                     </div>
                                 </div>
-                            @endforeach
-                        @endif
-
-                        @if($servicios->isEmpty() && (!isset($productos) || $productos->isEmpty()))
-                            <div class="p-4 text-center text-muted">
-                                No hay productos ni servicios en el catálogo.
-                            </div>
+                            <?php endforeach; ?>
                         @endif
                     </div>
                 </div>
@@ -227,6 +234,45 @@
         </div>
     </div>
 
+    <!-- MODAL DE COMBOS -->
+    <div class="modal fade" id="modalCombos" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg"> 
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title fw-bold">Paquetes y Combos Promocionales</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="list-group list-group-flush">
+                        <?php if(count($combos) > 0): ?>
+                            <?php foreach($combos as$combo): ?>
+                                <div class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom">
+                                    <div>
+                                        <h6 class="mb-1 fw-bold fs-5">{{ $combo->nombre }}</h6>
+                                        <small class="text-muted d-block mb-2">Contiene: 
+                                            <?php foreach($combo->productos as$p): ?>
+                                                {{ $p->pivot->cantidad }}x {{$p->nombre }},
+                                            <?php endforeach; ?>
+                                        </small>
+                                    </div>
+                                    <div class="text-end ms-3">
+                                        <span class="d-block text-success fw-bold fs-4 mb-1">${{ number_format($combo->precio_total, 2) }}</span>
+                                        <button type="button" class="btn btn-warning fw-bold text-dark" data-bs-dismiss="modal" onclick="agregarCombo({{ $combo->id }})">
+                                            Agregar
+                                        </button>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <div class="text-center text-muted py-4">No hay combos activos en este momento.</div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CLIENTE RÁPIDO -->
     <div class="modal fade" id="modalNuevoCliente" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -264,15 +310,11 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
 
-            // --- ALERTA DE ÉXITO AL PROCESAR COBRO Y AUTO-IMPRESIÓN ---
             @if(session('success'))
                 @if(session('tipo_documento') == 'Ticket')
-                    
-                    // 1. AUTO-IMPRIMIR SILENCIOSAMENTE EN SEGUNDO PLANO
                     fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
                         .catch(error => console.error('Error al auto-imprimir:', error));
                     
-                    // 2. MOSTRAR ALERTA CON BOTÓN DE REIMPRESIÓN
                     Swal.fire({
                         icon: 'success',
                         title: '¡Cobro Procesado con Éxito!',
@@ -285,7 +327,6 @@
                         reverseButtons: true
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            // Si presiona "Reimprimir", mandamos otra orden de impresión silenciosa
                             Swal.fire({
                                 title: 'Enviando a impresora...',
                                 text: 'Por favor espere.',
@@ -310,11 +351,10 @@
                     });
 
                 @else
-                    // Para Facturas o Crédito Fiscal (FCF / CCF)
                     Swal.fire({
                         icon: 'success',
                         title: '¡Cobro Procesado!',
-                        text: 'Documento {{ session('tipo_documento') }} registrado. {{ session('success') }}',
+                        text: 'Documento registrado.',
                         confirmButtonColor: '#198754'
                     });
                 @endif
@@ -322,7 +362,7 @@
 
         });
 
-        function formatoTel(input) {
+    function formatoTel(input) {
         let valor = input.value.replace(/\D/g, '');
         if (valor.length > 4) {
             valor = valor.substring(0, 4) + '-' + valor.substring(4, 8);
@@ -338,7 +378,6 @@
         input.value = valor;
     }
 
-    // --- FUNCIÓN PARA GUARDAR EL CLIENTE POR AJAX ---
     function guardarClienteRapido() {
         let form = document.getElementById('formClienteRapido');
         let formData = new FormData(form);
@@ -352,262 +391,308 @@
             }
         })
         .then(response => {
-            if (!response.ok) {
-                return response.json().then(err => { throw err; });
-            }
+            if (!response.ok) { return response.json().then(err => { throw err; }); }
             return response.json();
         })
         .then(data => {
-            if(data.success) {
-                // Formateamos cómo se verá en el buscador
+            if (data.success) {
                 let texto = data.cliente.nombre;
-                if(data.cliente.telefono) texto += ' | Tel: ' + data.cliente.telefono;
-                if(data.cliente.dui) texto += ' | DUI: ' + data.cliente.dui;
+                if (data.cliente.telefono) texto += ' | Tel: ' + data.cliente.telefono;
+                if (data.cliente.dui) texto += ' | DUI: ' + data.cliente.dui;
                 
-                // Lo agregamos a Select2 y lo seleccionamos
                 let nuevaOpcion = new Option(texto, data.cliente.id, true, true);
                 $('#clienteSelect').append(nuevaOpcion).trigger('change');
                 
-                // Cerramos el modal y limpiamos las cajas de texto
                 var modal = bootstrap.Modal.getInstance(document.getElementById('modalNuevoCliente'));
                 modal.hide();
                 form.reset();
                 
-                // Alerta de éxito
                 Swal.fire('¡Éxito!', 'Cliente registrado y seleccionado.', 'success');
             } else {
                 Swal.fire('Error', data.message, 'error');
             }
         })
         .catch(error => {
-            console.error('Error capturado:', error);
             let mensaje = "Error desconocido al intentar conectar con el servidor.";
-            
-            // Si la base de datos o Laravel devuelven un error específico
             if (error.errors) {
                 mensaje = Object.values(error.errors).flat().join("\n");
             } else if (error.message) {
                 mensaje = error.message;
             }
-            
             Swal.fire('Error al guardar', mensaje, 'error');
         });
     }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            let carrito = []; // Memoria del carrito
-            const tasaIVA = 0.13; // 13% de IVA de El Salvador
-            const inputCodigo = document.getElementById('codigo_producto');
-            $('.select2').select2({
-                placeholder: "Escriba para buscar un cliente...",
-                allowClear: true,
-                width: '100%' // Para que no rompa tu diseño de Bootstrap
-            });
-            // --- 1. Lógica Matemática del Carrito ---
-            function renderizarCarrito() {
-                const cuerpo = document.getElementById('cuerpoCarrito');
-                const inputsOcultos = document.getElementById('inputsCarritoOcultos');
-                cuerpo.innerHTML = '';
-                inputsOcultos.innerHTML = '';
-                
-                let subtotalGlobal = 0;
-                let ivaGlobal = 0;
+    let carrito = []; 
+    let combosAplicados = []; 
+    const tasaIVA = 0.13; 
+    
+    const combosDisponibles = @json($combos ?? []);
 
-                if (carrito.length === 0) {
-                    cuerpo.innerHTML = '<tr id="filaVacia"><td colspan="6" class="text-muted py-4">El carrito está vacío.</td></tr>';
-                    document.getElementById('btnCobrar').disabled = true;
-                } else {
-                    document.getElementById('btnCobrar').disabled = false;
-                    
-                    carrito.forEach((item, index) => {
-                        // Cálculos por línea exigidos por MH
-                        // Cálculos a la inversa (El precio del producto YA incluye IVA)
-                        let precioFinalUnitario = parseFloat(item.precio); 
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputCodigo = document.getElementById('codigo_producto');
+        $('.select2').select2({ placeholder: "Escriba para buscar un cliente...", allowClear: true, width: '100%' });
 
-                        // 1. Extraemos la base dividiendo entre 1.13
-                        let precioUnitarioSinIva = precioFinalUnitario / 1.13; 
-
-                        // 2. Obtenemos cuánto de ese precio era puro IVA
-                        let montoIvaUnitario = precioFinalUnitario - precioUnitarioSinIva; 
-
-                        // 3. Multiplicamos por la cantidad que lleva el cliente
-                        let subtotalLinea = precioUnitarioSinIva * item.cantidad;
-                        let ivaLinea = montoIvaUnitario * item.cantidad;
-                        
-                        subtotalGlobal += subtotalLinea;
-                        ivaGlobal += ivaLinea;
-
-                        // --- AQUÍ ESTÁ EL BLINDAJE VISUAL DEL STOCK ---
-                        // Si es un servicio no le ponemos límite, si es producto le ponemos límite maximo = stock_actual
-                        let esServicio = (item.es_servicio == 1 || item.es_servicio === true);
-                        let maxAtributo = esServicio ? "" : `max="${item.stock_actual}"`;
-
-                        // Dibujar tabla
-                        cuerpo.innerHTML += `
-                            <tr>
-                                <td class="fw-bold">${item.codigo}</td>
-                                <td class="text-start">${item.nombre}</td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm text-center mx-auto" style="width: 70px;" value="${item.cantidad}" min="1" ${maxAtributo} onchange="cambiarCantidad(${index}, this.value)">
-                                </td>
-                                <td>$${precioUnitarioSinIva.toFixed(2)}</td>
-                                <td class="fw-bold">$${(subtotalLinea + ivaLinea).toFixed(2)}</td>
-                                <td><button type="button" class="btn btn-sm btn-danger" onclick="quitarDelCarrito(${index})">❌</button></td>
-                            </tr>
-                        `;
-
-                        // Crear inputs ocultos para que el formulario se envíe a Laravel
-                        inputsOcultos.innerHTML += `
-                            <input type="hidden" name="productos[${index}][id]" value="${item.id}">
-                            <input type="hidden" name="productos[${index}][cantidad]" value="${item.cantidad}">
-                            <input type="hidden" name="productos[${index}][precio_unitario_sin_iva]" value="${precioUnitarioSinIva.toFixed(2)}">
-                            <input type="hidden" name="productos[${index}][monto_iva_unitario]" value="${(precioUnitarioSinIva * tasaIVA).toFixed(2)}">
-                            <input type="hidden" name="productos[${index}][subtotal_linea]" value="${subtotalLinea.toFixed(2)}">
-                        `;
-                    });
-                }
-
-                // Actualizar totales en pantalla
-                let totalPagar = subtotalGlobal + ivaGlobal;
-                document.getElementById('txtSubtotal').innerText = subtotalGlobal.toFixed(2);
-                document.getElementById('txtIva').innerText = ivaGlobal.toFixed(2);
-                document.getElementById('txtTotal').innerText = totalPagar.toFixed(2);
-
-                // Guardar totales ocultos para el formulario
-                document.getElementById('inputSubtotal').value = subtotalGlobal.toFixed(2);
-                document.getElementById('inputIva').value = ivaGlobal.toFixed(2);
-                document.getElementById('inputTotal').value = totalPagar.toFixed(2);
-            }
-            // --- 2. Búsqueda por AJAX (Lector de barras, Código o Nombre) ---
-
-            window.buscarProducto = function(termino) {
-                if(!termino) return;
-                
-                fetch(`/ventas/buscar-producto/${encodeURIComponent(termino)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.existe) {
-                            let prod = data.producto;
-                            
-                            // Determinamos si es un servicio (para ignorar el stock)
-                            let esServicio = (prod.es_servicio == 1 || prod.es_servicio === true);
-                            
-                            let existeEnCarrito = carrito.findIndex(p => p.id === prod.id);
-                            
-                            if (existeEnCarrito !== -1) {
-                                // Si YA ESTÁ en el carrito, revisamos si sumar 1 excede el stock_actual
-                                // OJO: Aquí estaba el error, ahora dice prod.stock_actual
-                                if (!esServicio && carrito[existeEnCarrito].cantidad >= prod.stock_actual) {
-                                    Swal.fire('⚠️ Stock Insuficiente', `Solo tienes ${prod.stock_actual} unidades de "${prod.nombre}" en bodega. No puedes agregar más.`, 'warning');
-                                    inputCodigo.value = '';
-                                    return; // Cortamos la ejecución aquí, no se agrega
-                                }
-                                carrito[existeEnCarrito].cantidad += 1;
-                            } else {
-                                // Si ES NUEVO en el carrito, revisamos si de casualidad el stock_actual es 0
-                                // OJO: Aquí también ahora dice prod.stock_actual
-                                if (!esServicio && prod.stock_actual <= 0) {
-                                    Swal.fire('❌ Agotado', `El producto "${prod.nombre}" se ha quedado sin stock.`, 'error');
-                                    inputCodigo.value = '';
-                                    return; // Cortamos la ejecución
-                                }
-                                prod.cantidad = 1;
-                                carrito.push(prod);
-                            }
-                            
-                            renderizarCarrito();
-                            inputCodigo.value = ''; // Limpiar casilla
-                            inputCodigo.focus();
-                        } else {
-                            Swal.fire('No encontrado', 'El código no existe o el producto está inactivo.', 'error');
-                            inputCodigo.select();
-                        }
-                    })
-                    .catch(error => console.error('Error en búsqueda:', error));
-            }   
-
-            // Eventos del input buscar
-            document.getElementById('btnBuscar').addEventListener('click', () => buscarProducto(inputCodigo.value));
-            inputCodigo.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    e.preventDefault(); // Evita enviar el formulario por error
-                    buscarProducto(this.value);
-                }
-            });
-
-            // Funciones globales para que la tabla las llame
-            // --- Cambio manual de cantidad en el carrito ---
-            window.cambiarCantidad = function(index, nuevaCantidad) {
-                let cant = parseInt(nuevaCantidad);
-                let item = carrito[index];
-                
-                if (cant > 0) {
-                    let esServicio = (item.es_servicio == 1 || item.es_servicio === true);
-                    
-                    // Verificamos si el número digitado supera el stock en bodega
-                    if (!esServicio && cant > item.stock_actual) {
-                        Swal.fire('⚠️ Stock Excedido', `Trataste de poner ${cant}, pero solo hay ${item.stock_actual} disponibles.`, 'warning');
-                        item.cantidad = item.stock_actual; // Lo forzamos a bajar al máximo permitido
-                    } else {
-                        item.cantidad = cant;
-                    }
-                    renderizarCarrito();
-                }
-            }
-            window.quitarDelCarrito = function(index) {
-                carrito.splice(index, 1);
-                renderizarCarrito();
-            }
-
-            // --- 3. Escáner con la Cámara (Celular) ---
-            const btnCamara = document.getElementById('btnEscanerCamara');
-            const readerDiv = document.getElementById('reader');
-            let html5QrcodeScanner = null;
-
-            btnCamara.addEventListener('click', function() {
-                readerDiv.style.display = 'block';
-                html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 100} }, false);
-                html5QrcodeScanner.render(onScanSuccess);
-            });
-
-            function onScanSuccess(decodedText) {
-                html5QrcodeScanner.clear();
-                readerDiv.style.display = 'none';
-                inputCodigo.value = decodedText;
-                buscarProducto(decodedText); // Busca y agrega de inmediato
-            }
-
-            // --- Búsqueda en tiempo real dentro del Modal de Servicios ---
-            const buscadorServicios = document.getElementById('buscadorServicios');
+        window.renderizarCarrito = function() {
+            const cuerpo = document.getElementById('cuerpoCarrito');
+            const inputsOcultos = document.getElementById('inputsCarritoOcultos');
+            cuerpo.innerHTML = '';
+            inputsOcultos.innerHTML = '';
             
-            if (buscadorServicios) {
-                buscadorServicios.addEventListener('keyup', function() {
-                    let filtro = this.value.toLowerCase();
-                    let items = document.querySelectorAll('.item-servicio');
+            let subtotalNormalSinIva = 0;
+            let totalNormalConIva = 0;
 
-                    items.forEach(function(item) {
-                        // Busca coincidencia en todo el texto del ítem (nombre y código)
-                        let texto = item.innerText.toLowerCase();
-                        if (texto.includes(filtro)) {
-                            item.classList.remove('d-none');
-                            item.classList.add('d-flex');
-                        } else {
-                            item.classList.remove('d-flex');
-                            item.classList.add('d-none');
-                        }
-                    });
+            if (carrito.length === 0) {
+                cuerpo.innerHTML = '<tr id="filaVacia"><td colspan="6" class="text-muted py-4">El carrito está vacío. Escanea un repuesto para empezar.</td></tr>';
+                document.getElementById('btnCobrar').disabled = true;
+            } else {
+                document.getElementById('btnCobrar').disabled = false;
+                
+                carrito.forEach((item, index) => {
+                    let precioFinalUnitario = parseFloat(item.precio); 
+                    let precioUnitarioSinIva = precioFinalUnitario / 1.13; 
+                    let montoIvaUnitario = precioFinalUnitario - precioUnitarioSinIva; 
+
+                    let subtotalLinea = precioUnitarioSinIva * item.cantidad;
+                    let ivaLinea = montoIvaUnitario * item.cantidad;
+                    
+                    subtotalNormalSinIva += subtotalLinea;
+                    totalNormalConIva += (precioFinalUnitario * item.cantidad);
+
+                    let esServicio = (item.es_servicio == 1 || item.es_servicio === true);
+                    let maxAtributo = esServicio ? "" : `max="${item.stock_actual}"`;
+
+                    cuerpo.innerHTML += `
+                        <tr>
+                            <td class="fw-bold">${item.codigo}</td>
+                            <td class="text-start">${item.nombre}</td>
+                            <td>
+                                <input type="number" class="form-control form-control-sm text-center mx-auto" style="width: 70px;" value="${item.cantidad}" min="1" ${maxAtributo} onchange="cambiarCantidad(${index}, this.value)">
+                            </td>
+                            <td>$${precioUnitarioSinIva.toFixed(2)}</td>
+                            <td class="fw-bold">$${(subtotalLinea + ivaLinea).toFixed(2)}</td>
+                            <td><button type="button" class="btn btn-sm btn-danger" onclick="quitarDelCarrito(${index})">❌</button></td>
+                        </tr>
+                    `;
+
+                    inputsOcultos.innerHTML += `
+                        <input type="hidden" name="productos[${index}][id]" value="${item.id}">
+                        <input type="hidden" name="productos[${index}][cantidad]" value="${item.cantidad}">
+                        <input type="hidden" name="productos[${index}][precio_unitario_sin_iva]" value="${precioUnitarioSinIva.toFixed(2)}">
+                        <input type="hidden" name="productos[${index}][monto_iva_unitario]" value="${montoIvaUnitario.toFixed(2)}">
+                        <input type="hidden" name="productos[${index}][subtotal_linea]" value="${subtotalLinea.toFixed(2)}">
+                    `;
                 });
             }
 
-            // Opcional: Limpiar el buscador cada vez que se abre el modal
-            const modalServicios = document.getElementById('modalServicios');
-            if (modalServicios) {
-                modalServicios.addEventListener('shown.bs.modal', function () {
-                    buscadorServicios.value = '';
-                    buscadorServicios.dispatchEvent(new Event('keyup')); // Resetea la lista
-                    buscadorServicios.focus(); // Pone el cursor listo para escribir
-                });
+            let ahorroTotalConIva = 0;
+            combosAplicados.forEach(c => ahorroTotalConIva += c.ahorroConIva);
+
+            if (ahorroTotalConIva > totalNormalConIva) ahorroTotalConIva = totalNormalConIva;
+            let ahorroSinIva = ahorroTotalConIva / 1.13;
+
+            let subtotalFinalSinIva = subtotalNormalSinIva; 
+            let ivaFinal = (subtotalNormalSinIva - ahorroSinIva) * 0.13; 
+            let totalFinal = totalNormalConIva - ahorroTotalConIva; 
+
+            document.getElementById('txtSubtotal').innerText = subtotalFinalSinIva.toFixed(2);
+            
+            if (ahorroTotalConIva > 0) {
+                document.getElementById('filaDescuento').style.setProperty('display', 'flex', 'important');
+                document.getElementById('txtDescuento').innerText = ahorroSinIva.toFixed(2);
+            } else {
+                document.getElementById('filaDescuento').style.setProperty('display', 'none', 'important');
+            }
+            
+            document.getElementById('txtIva').innerText = ivaFinal.toFixed(2);
+            document.getElementById('txtTotal').innerText = totalFinal.toFixed(2);
+
+            document.getElementById('inputSubtotal').value = subtotalFinalSinIva.toFixed(2);
+            document.getElementById('inputDescuentoHidden').value = ahorroSinIva.toFixed(2);
+            document.getElementById('inputIva').value = ivaFinal.toFixed(2);
+            document.getElementById('inputTotal').value = totalFinal.toFixed(2);
+        }
+
+        window.renderizarCombosAplicados = function() {
+            let div = document.getElementById('listaCombosAplicados');
+            div.innerHTML = '';
+            combosAplicados.forEach((c, index) => {
+                div.innerHTML += `
+                    <div class="alert alert-warning p-2 mb-2 d-flex justify-content-between align-items-center shadow-sm border-warning">
+                        <small class="fw-bold text-dark">🎁 ${c.nombre} (Ahorró: $${c.ahorroConIva.toFixed(2)})</small>
+                        <button type="button" class="btn-close btn-close-sm" onclick="quitarCombo(${index})" title="Quitar descuento"></button>
+                    </div>
+                `;
+            });
+        }
+
+        window.agregarCombo = function(idCombo) {
+            let combo = combosDisponibles.find(c => c.id == idCombo);
+            if (!combo) return;
+
+            let stockSuficiente = true;
+            let mensajeError = '';
+
+            for (let prod of combo.productos) {
+                let esServicio = (prod.es_servicio == 1 || prod.es_servicio === true);
+                if (!esServicio) {
+                    let cantRequerida = parseInt(prod.pivot.cantidad);
+                    let indexEnCarrito = carrito.findIndex(p => p.id === prod.id);
+                    let cantEnCarrito = indexEnCarrito !== -1 ? carrito[indexEnCarrito].cantidad : 0;
+                    
+                    if ((cantEnCarrito + cantRequerida) > prod.stock_actual) {
+                        stockSuficiente = false;
+                        mensajeError = `Falta inventario de "${prod.nombre}". Requiere ${cantRequerida}, Disponible extra: ${prod.stock_actual - cantEnCarrito}.`;
+                        break;
+                    }
+                }
+            }
+
+            if (!stockSuficiente) {
+                Swal.fire('❌ Stock Insuficiente', mensajeError, 'error');
+                return;
+            }
+
+            let sumaNormalConIva = 0;
+            combo.productos.forEach(prod => {
+                let cant = parseInt(prod.pivot.cantidad);
+                sumaNormalConIva += (parseFloat(prod.precio) * cant);
+                
+                let index = carrito.findIndex(p => p.id === prod.id);
+                if (index !== -1) {
+                    carrito[index].cantidad += cant;
+                } else {
+                    let nuevoProd = {...prod};
+                    nuevoProd.cantidad = cant;
+                    carrito.push(nuevoProd);
+                }
+            });
+
+            let ahorroConIva = sumaNormalConIva - parseFloat(combo.precio_total);
+            if (ahorroConIva < 0) ahorroConIva = 0; 
+
+            combosAplicados.push({
+                nombre: combo.nombre,
+                ahorroConIva: ahorroConIva
+            });
+
+            renderizarCombosAplicados();
+            renderizarCarrito();
+            Swal.fire({
+                icon: 'success',
+                title: '¡Combo Aplicado!',
+                text: `Se aplicó un descuento de $${ahorroConIva.toFixed(2)}.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        window.quitarCombo = function(index) {
+            combosAplicados.splice(index, 1);
+            renderizarCombosAplicados();
+            renderizarCarrito();
+        }
+
+        window.buscarProducto = function(termino) {
+            if (!termino) return;
+            fetch(`/ventas/buscar-producto/${encodeURIComponent(termino)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.existe) {
+                        let prod = data.producto;
+                        let esServicio = (prod.es_servicio == 1 || prod.es_servicio === true);
+                        let existeEnCarrito = carrito.findIndex(p => p.id === prod.id);
+                        
+                        if (existeEnCarrito !== -1) {
+                            if (!esServicio && carrito[existeEnCarrito].cantidad >= prod.stock_actual) {
+                                Swal.fire('⚠️ Stock Insuficiente', `Solo tienes ${prod.stock_actual} unidades en bodega.`, 'warning');
+                                inputCodigo.value = '';
+                                return;
+                            }
+                            carrito[existeEnCarrito].cantidad += 1;
+                        } else {
+                            if (!esServicio && prod.stock_actual <= 0) {
+                                Swal.fire('❌ Agotado', `El producto se ha quedado sin stock.`, 'error');
+                                inputCodigo.value = '';
+                                return;
+                            }
+                            prod.cantidad = 1;
+                            carrito.push(prod);
+                        }
+                        
+                        renderizarCarrito();
+                        inputCodigo.value = ''; 
+                        inputCodigo.focus();
+                    } else {
+                        Swal.fire('No encontrado', 'El código no existe o el producto está inactivo.', 'error');
+                        inputCodigo.select();
+                    }
+                })
+                .catch(error => console.error('Error en búsqueda:', error));
+        }   
+
+        document.getElementById('btnBuscar').addEventListener('click', () => buscarProducto(inputCodigo.value));
+        inputCodigo.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                buscarProducto(this.value);
             }
         });
+
+        window.cambiarCantidad = function(index, nuevaCantidad) {
+            let cant = parseInt(nuevaCantidad);
+            let item = carrito[index];
+            if (cant > 0) {
+                let esServicio = (item.es_servicio == 1 || item.es_servicio === true);
+                if (!esServicio && cant > item.stock_actual) {
+                    Swal.fire('⚠️ Stock Excedido', `Solo hay ${item.stock_actual} disponibles.`, 'warning');
+                    item.cantidad = item.stock_actual; 
+                } else {
+                    item.cantidad = cant;
+                }
+                renderizarCarrito();
+            }
+        }
+
+        window.quitarDelCarrito = function(index) {
+            carrito.splice(index, 1);
+            renderizarCarrito();
+        }
+
+        const btnCamara = document.getElementById('btnEscanerCamara');
+        const readerDiv = document.getElementById('reader');
+        let html5QrcodeScanner = null;
+
+        btnCamara.addEventListener('click', function() {
+            readerDiv.style.display = 'block';
+            html5QrcodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: {width: 250, height: 100} }, false);
+            html5QrcodeScanner.render(onScanSuccess);
+        });
+
+        function onScanSuccess(decodedText) {
+            html5QrcodeScanner.clear();
+            readerDiv.style.display = 'none';
+            inputCodigo.value = decodedText;
+            buscarProducto(decodedText);
+        }
+
+        const buscadorServicios = document.getElementById('buscadorServicios');
+        if (buscadorServicios) {
+            buscadorServicios.addEventListener('keyup', function() {
+                let filtro = this.value.toLowerCase();
+                let items = document.querySelectorAll('.item-servicio');
+                items.forEach(function(item) {
+                    let texto = item.innerText.toLowerCase();
+                    if (texto.includes(filtro)) {
+                        item.classList.remove('d-none');
+                        item.classList.add('d-flex');
+                    } else {
+                        item.classList.remove('d-flex');
+                        item.classList.add('d-none');
+                    }
+                });
+            });
+        }
+    });
 </script>
 @endpush

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids; // Importante para el MH
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class Venta extends Model
 {
@@ -13,7 +13,7 @@ class Venta extends Model
     protected $table = 'ventas';
 
     protected $fillable = [
-        'orden_entrada_id', 'cliente_id', 'subtotal', 'total_iva', 
+        'orden_entrada_id', 'cliente_id', 'subtotal', 'descuento' , 'total_iva', 
         'total_pagar', 'tipo_documento', 'estado', 
         'uuid_generacion', 'sello_recepcion', 'codigo_generacion', 'estado_dte'
     ];

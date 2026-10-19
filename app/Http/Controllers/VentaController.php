@@ -7,6 +7,7 @@ use App\Models\OrdenEntrada;
 use App\Models\Producto;
 use App\Models\Venta;
 use App\Models\VentaDetalle;
+use App\Models\Combo; 
 use Illuminate\Support\Facades\DB;
 use Mike42\Escpos\Printer;
 use Mike42\Escpos\PrintConnectors\NetworkPrintConnector;
@@ -19,10 +20,12 @@ class VentaController extends Controller
         // Buscamos la orden con su cliente y motocicleta
         $orden = OrdenEntrada::with(['cliente', 'motocicleta'])->findOrFail($orden_id);
         
-        // Traemos todos los servicios activos para el catálogo rápido
+        // Traemos todos los servicios, productos y combos activos
         $servicios = Producto::where('es_servicio', true)->where('activo', true)->get();
         $productos = Producto::where('es_servicio', false)->where('activo', true)->get();
-        return view('ventas.pos', compact('orden', 'servicios', 'productos'));
+        $combos = Combo::with('productos')->where('activo', true)->get(); // <-- NUEVO
+
+        return view('ventas.pos', compact('orden', 'servicios', 'productos', 'combos'));
     }
 
     // 2. Función AJAX para el Escáner de Código de Barras
@@ -46,6 +49,7 @@ class VentaController extends Controller
             'orden_entrada_id' => 'nullable|exists:ordenes_entrada,id',
             'cliente_id' => 'required|exists:clientes,id',
             'subtotal_final' => 'required|numeric|min:0',
+            'descuento_final' => 'required|numeric|min:0', // <-- NUEVO: Validamos el descuento
             'iva_final' => 'required|numeric|min:0',
             'total_final' => 'required|numeric|min:0',
             'tipo_documento' => 'required|in:Ticket,FCF,CCF',
@@ -61,6 +65,7 @@ class VentaController extends Controller
                 'orden_entrada_id' => $request->orden_entrada_id,
                 'cliente_id' => $request->cliente_id,
                 'subtotal' => $request->subtotal_final,
+                'descuento' => $request->descuento_final, // <-- NUEVO: Guardamos el descuento
                 'total_iva' => $request->iva_final,
                 'total_pagar' => $request->total_final,
                 'tipo_documento' => $request->tipo_documento,
@@ -109,6 +114,7 @@ class VentaController extends Controller
             return redirect()->back()->withErrors('Ocurrió un error al procesar el cobro: ' . $e->getMessage());
         }
     }
+
     // Cargar POS para Venta Directa (Sin moto)
     public function posDirecto()
     {
@@ -116,16 +122,18 @@ class VentaController extends Controller
         $clientes = \App\Models\Cliente::all();
         $servicios = Producto::where('es_servicio', true)->where('activo', true)->get();
         $productos = Producto::where('es_servicio', false)->where('activo', true)->get();
+        $combos = Combo::with('productos')->where('activo', true)->get(); // <-- NUEVO
+
         // Mandamos 'orden' como null para que la vista sepa que es Venta Directa
-        return view('ventas.pos', compact('clientes', 'servicios', 'productos'))->with('orden', null);
+        return view('ventas.pos', compact('clientes', 'servicios', 'productos', 'combos'))->with('orden', null);
     }
 
-    // Generar e imprimir el ticket directamente por Red (LAN)
+    // Generar e imprimir el ticket directamente
     public function imprimirTicketRed($id)
     {
         $venta = Venta::with(['detalles.producto', 'cliente', 'orden.motocicleta'])->findOrFail($id);
         try {
-            // Conectamos directo a la IP de la ticketera (Puerto 9100 por defecto)
+            // Conectamos a la ticketera
             $connector = new NetworkPrintConnector("192.168.1.200", 9100); 
             $printer = new Printer($connector);
 
@@ -146,10 +154,8 @@ class VentaController extends Controller
             $printer->text($linea);
 
             // 2. Datos del Cliente (Izquierda)
-            // 2. Datos del Cliente (Izquierda)
             $printer->setJustification(Printer::JUSTIFY_LEFT);
             
-            // Obtenemos el cliente directamente de la venta y lo limpiamos de tildes
             $printer->text("Cliente: " . Str::ascii($venta->cliente->nombre) . "\n");
             
             // Validamos si hay una moto en el taller, o si es un cliente de mostrador
@@ -190,6 +196,15 @@ class VentaController extends Controller
             $esp = $ancho - mb_strlen("SUBTOTAL:") - mb_strlen($subtotal);
             $printer->text("SUBTOTAL:" . str_repeat(" ", $esp > 0 ? $esp : 1) . $subtotal . "\n");
 
+            // --- NUEVO: Mostrar el Ahorro si existe ---
+            if ($venta->descuento > 0) {
+                $textoAhorro = "AHORRO POR COMBO:";
+                $montoAhorro = "-$" . number_format($venta->descuento, 2);
+                $esp = $ancho - mb_strlen($textoAhorro) - mb_strlen($montoAhorro);
+                $printer->text($textoAhorro . str_repeat(" ", $esp > 0 ? $esp : 1) . $montoAhorro . "\n");
+            }
+            // ------------------------------------------
+
             $iva = "$" . number_format($venta->total_iva, 2);
             $esp = $ancho - mb_strlen("IVA (13%):") - mb_strlen($iva);
             $printer->text("IVA (13%):" . str_repeat(" ", $esp > 0 ? $esp : 1) . $iva . "\n");
@@ -211,7 +226,6 @@ class VentaController extends Controller
             $printer->text("de salir.\n");
             $printer->text("\n\n"); // Espacio para que la cuchilla corte bien
 
-            // ¡EL COMANDO MÁGICO PARA LA CUCHILLA!
             $printer->cut();
             
             // Cerramos la conexión
@@ -220,7 +234,6 @@ class VentaController extends Controller
             return redirect()->back()->with('success', 'Ticket enviado a la impresora exitosamente.');
 
         } catch (\Exception $e) {
-            // Si la impresora está apagada o sin papel, Laravel no se cae, solo te avisa.
             return redirect()->back()->withErrors('Error de impresora: Revise si está encendida y conectada a la red. Detalle: ' . $e->getMessage());
         }
     }
