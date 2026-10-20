@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Punto de Venta - MotoTaller')
+@section('title', 'Punto de Venta ')
 
 @push('css')
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
@@ -72,7 +72,7 @@
                             <button class="btn btn-success" type="button" id="btnBuscar">➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
-                            <i class="fas "></i> Escáner
+                            <i class="fas "></i> Esc
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
                              Catálogo

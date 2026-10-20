@@ -159,15 +159,22 @@
         <aside class="sidebar py-3" id="menuLateral">
             <div class="text-muted small fw-bold px-4 mb-2 text-uppercase">Opciones</div>
             
-            <a href="{{ route('recepcion.index') }}" class="nav-link-side">
-                <i class="fas fa-clipboard-list me-3"></i> Órdenes de Taller
-            </a>
             
             <a href="{{ route('ventas.directa') }}"  class="nav-link-side text-success fw-bold"> <i class="fas fa-shopping-cart me-3"></i> Punto de Venta
             </a>
+
+            <a href="{{ route('ventas.index') }}" class="nav-link-side {{ request()->routeIs('ventas.index', 'ventas.show') ? 'active' : '' }}">
+                <i class="fas fa-history me-3"></i> Historial de Ventas
+            </a>
+            
+            <a href="{{ route('recepcion.index') }}" class="nav-link-side">
+                <i class="fas fa-clipboard-list me-3"></i> Órdenes de Taller
+            </a>
+
             <a href="{{ route('inventario.index') }}" class="nav-link-side">
                 <i class="fas fa-boxes me-3"></i> Inventario (Repuestos)
             </a>
+
             <a href="{{ route('combos.index') }}" class="nav-link-side">
                 <i class="fas fa-box me-3"></i> Combos y Paquetes
             </a>

@@ -12,10 +12,6 @@ Route::get('/', function () {
 });
 
 
-Route::resource('combos', ComboController::class);
-Route::get('/combos/{combo}/edit', [App\Http\Controllers\ComboController::class, 'edit'])->name('combos.edit');
-Route::patch('/combos/{combo}/toggle', [App\Http\Controllers\ComboController::class, 'toggleStatus'])->name('combos.toggle');
-Route::put('/combos/{combo}', [App\Http\Controllers\ComboController::class, 'update'])->name('combos.update');
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
@@ -39,4 +35,15 @@ Route::get('/ventas/imprimir-red/{id}', [VentaController::class, 'imprimirTicket
 Route::get('/ventas/directa', [VentaController::class, 'posDirecto'])->name('ventas.directa');
 
 Route::post('/clientes/rapido', [ClienteController::class, 'storeRapido'])->name('clientes.rapido');
+
+
+Route::resource('combos', ComboController::class);
+Route::get('/combos/{combo}/edit', [App\Http\Controllers\ComboController::class, 'edit'])->name('combos.edit');
+Route::patch('/combos/{combo}/toggle', [App\Http\Controllers\ComboController::class, 'toggleStatus'])->name('combos.toggle');
+Route::put('/combos/{combo}', [App\Http\Controllers\ComboController::class, 'update'])->name('combos.update');
+
+// Historial de Ventas
+Route::get('/historial-ventas', [App\Http\Controllers\VentaController::class, 'index'])->name('ventas.index');
+Route::get('/ventas/imprimir/{id}', [App\Http\Controllers\VentaController::class, 'imprimirTicketRed'])->name('ventas.imprimir');
+
 });

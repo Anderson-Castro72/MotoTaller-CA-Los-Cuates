@@ -166,7 +166,7 @@ class VentaController extends Controller
             }
             
             $printer->text($linea);
-
+ 
             // 3. Cabecera de Productos (Matemática para empujar "TOTAL" a la derecha)
             $cabeceraIzq = "CANT DESCRIPCION";
             $cabeceraDer = "TOTAL";
@@ -176,7 +176,7 @@ class VentaController extends Controller
 
             // 4. Detalle de productos
             foreach($venta->detalles as $detalle) {
-                $totalFila = "$" . number_format($detalle->subtotal_linea + $detalle->monto_iva_unitario, 2);
+                $totalFila = "$" . number_format(($detalle->precio_unitario_sin_iva + $detalle->monto_iva_unitario) * $detalle->cantidad, 2);
                 $izq = $detalle->cantidad . "  " . Str::ascii($detalle->producto->nombre);
 
                 // Si el nombre es muy largo, lo cortamos sutilmente para que no arruine la matemática
@@ -236,5 +236,28 @@ class VentaController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->withErrors('Error de impresora: Revise si está encendida y conectada a la red. Detalle: ' . $e->getMessage());
         }
+    }
+
+    // Mostrar el listado del Historial de Ventas
+    public function index()
+    {
+        // Agregamos 'detalles.producto' para que los modales tengan la información pre-cargada
+        $ventas = Venta::with(['cliente', 'orden.motocicleta', 'detalles.producto'])
+                    ->orderBy('created_at', 'desc')
+                    ->paginate(20);
+        
+        $totalHoy = Venta::whereDate('created_at', \Carbon\Carbon::today())->sum('total_pagar');
+        $totalMes = Venta::whereMonth('created_at', \Carbon\Carbon::now()->month)
+                         ->whereYear('created_at', \Carbon\Carbon::now()->year)
+                         ->sum('total_pagar');
+                    
+        return view('ventas.index', compact('ventas', 'totalHoy', 'totalMes'));
+    }
+
+    // Mostrar el detalle de una venta específica (Factura/Ticket)
+    public function show($id)
+    {
+        $venta = Venta::with(['cliente', 'orden.motocicleta', 'detalles.producto'])->findOrFail($id);
+        return view('ventas.show', compact('venta'));
     }
 }
