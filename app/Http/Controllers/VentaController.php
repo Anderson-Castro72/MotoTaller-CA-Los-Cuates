@@ -53,7 +53,10 @@ class VentaController extends Controller
             'iva_final' => 'required|numeric|min:0',
             'total_final' => 'required|numeric|min:0',
             'tipo_documento' => 'required|in:Ticket,FCF,CCF',
-            'productos' => 'required|array|min:1', // El carrito no puede estar vacío
+            'productos' => 'required|array|min:1', 
+            'metodo_pago' => 'required|in:Efectivo,Tarjeta,Transferencia',
+            'monto_recibido' => 'nullable|numeric|min:0',
+            'cambio' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -70,6 +73,10 @@ class VentaController extends Controller
                 'total_pagar' => $request->total_final,
                 'tipo_documento' => $request->tipo_documento,
                 'estado' => 'Pagado',
+                'metodo_pago' => $request->metodo_pago,
+                // Si es tarjeta o transferencia, guardamos el total cobrado, si es efectivo guardamos el billete recibido
+                'monto_recibido' => $request->metodo_pago == 'Efectivo' ? $request->monto_recibido : $request->total_final,
+                'cambio' => $request->metodo_pago == 'Efectivo' ? $request->cambio : 0,
             ]);
 
             // 3. Guardar el detalle línea por línea y descontar inventario
@@ -115,7 +122,7 @@ class VentaController extends Controller
         }
     }
 
-    // Cargar POS para Venta Directa (Sin moto)
+    // Cargar POS para Venta Directa
     public function posDirecto()
     {
         // Traemos los clientes para que el cajero elija a quién le vende
@@ -132,109 +139,120 @@ class VentaController extends Controller
     public function imprimirTicketRed($id)
     {
         $venta = Venta::with(['detalles.producto', 'cliente', 'orden.motocicleta'])->findOrFail($id);
+        
         try {
-            // Conectamos a la ticketera
-            $connector = new NetworkPrintConnector("192.168.1.200", 9100); 
-            $printer = new Printer($connector);
+            $connector = new \Mike42\Escpos\PrintConnectors\NetworkPrintConnector("192.168.1.200", 9100); 
+            $printer = new \Mike42\Escpos\Printer($connector);
 
-            // --- DISEÑO DEL TICKET (Comandos ESC/POS Puros) ---
-            
-            // Las impresoras de 80mm (como la RPT006) tienen un ancho estándar de 42 caracteres.
             $ancho = 42;
-            $linea = str_repeat("-", $ancho) . "\n";
+            $lineaSimple = str_repeat("-", $ancho) . "\n";
+            $lineaGruesa = str_repeat("=", $ancho) . "\n";
 
-            // 1. Encabezado Centrado
-            $printer->setJustification(Printer::JUSTIFY_CENTER);
-            $printer->setEmphasis(true); // Negrita
-            $printer->text("TALLER DE MOTOS \"CHITO APARICIO\"\n");
+            // 1. ENCABEZADO TRIBUTARIO
+            $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_CENTER);
+            $printer->setTextSize(2, 2);
+            $printer->setEmphasis(true);
+            $printer->text("TALLER DE MOTOS\n");
+            $printer->text("CHITO APARICIO\n");
+            
+            $printer->setTextSize(1, 1);
             $printer->setEmphasis(false);
             $printer->text("Los Cuates\n");
-            $printer->text("Fecha: " . $venta->created_at->format('d/m/Y H:i') . "\n");
-            $printer->text("Ticket Interno #" . strtoupper(substr($venta->id, -8)) . "\n");
-            $printer->text($linea);
+            $printer->text("Giro: Mantenimiento y reparacion de motocicletas\n");
+            $printer->text("Av. Principal, Col. El Palmar, Carr. Ruta Militar, San Miguel, San Miguel\n");
+            $printer->text("NIT: 04826278-5 | NRC: 371951-6\n");
+            $printer->text("Tel: 2624-6277 | WhatsApp: 7945-1882\n");
+            $printer->text($lineaGruesa);
 
-            // 2. Datos del Cliente (Izquierda)
-            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            // Título temporal hasta implementar DTE
+            $printer->setEmphasis(true);
+            $printer->text("DOCUMENTO DE CONTROL INTERNO\n");
+            $printer->setEmphasis(false);
+            $printer->text($lineaGruesa);
+
+            // 2. DATOS DE LA OPERACIÓN
+            $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_LEFT);
+            $printer->text("TICKET NO:   #" . strtoupper(substr($venta->id, -8)) . "\n");
+            $printer->text("FECHA/HORA:  " . $venta->created_at->format('d/m/Y H:i:s') . "\n");
+            $printer->text("CAJERO:      Administrador\n");
+            $printer->text($lineaSimple);
+
+            // 3. DATOS DEL CLIENTE
+            $printer->text("CLIENTE: " . \Illuminate\Support\Str::ascii($venta->cliente->nombre) . "\n");
+            if ($venta->cliente->dui) {
+                $printer->text("DUI:     " . $venta->cliente->dui . "\n");
+            }
             
-            $printer->text("Cliente: " . Str::ascii($venta->cliente->nombre) . "\n");
-            
-            // Validamos si hay una moto en el taller, o si es un cliente de mostrador
             if ($venta->orden_entrada_id && $venta->orden) {
-                $printer->text("Vehiculo: " . $venta->orden->motocicleta->placa . " - " . Str::ascii($venta->orden->motocicleta->marca) . "\n");
+                $printer->text("VEHICULO: " . $venta->orden->motocicleta->placa . " - " . \Illuminate\Support\Str::ascii($venta->orden->motocicleta->marca) . "\n");
             } else {
-                $printer->text("Tipo: Venta de Mostrador\n");
+                $printer->text("TIPO:    Venta de Mostrador\n");
             }
-            
-            $printer->text($linea);
- 
-            // 3. Cabecera de Productos (Matemática para empujar "TOTAL" a la derecha)
-            $cabeceraIzq = "CANT DESCRIPCION";
-            $cabeceraDer = "TOTAL";
-            $espacios = $ancho - mb_strlen($cabeceraIzq) - mb_strlen($cabeceraDer);
-            $printer->text($cabeceraIzq . str_repeat(" ", $espacios > 0 ? $espacios : 1) . $cabeceraDer . "\n");
-            $printer->text($linea);
+            $printer->text($lineaGruesa);
 
-            // 4. Detalle de productos
+            // 4. DETALLE DE PRODUCTOS
+            $printer->setEmphasis(true);
+            $printer->text("DESCRIPCION" . str_repeat(" ", $ancho - mb_strlen("DESCRIPCION") - mb_strlen("TOTAL")) . "TOTAL\n");
+            $printer->setEmphasis(false);
+            $printer->text($lineaSimple);
+
             foreach($venta->detalles as $detalle) {
+                $linea1 = $detalle->cantidad . "x " . \Illuminate\Support\Str::ascii($detalle->producto->nombre);
+                $printer->text($linea1 . "\n");
+
+                $precioUnitario = "$" . number_format($detalle->precio_unitario_sin_iva + $detalle->monto_iva_unitario, 2);
                 $totalFila = "$" . number_format(($detalle->precio_unitario_sin_iva + $detalle->monto_iva_unitario) * $detalle->cantidad, 2);
-                $izq = $detalle->cantidad . "  " . Str::ascii($detalle->producto->nombre);
-
-                // Si el nombre es muy largo, lo cortamos sutilmente para que no arruine la matemática
-                $maxIzq = $ancho - mb_strlen($totalFila) - 1;
-                if (mb_strlen($izq) > $maxIzq) {
-                    $izq = mb_substr($izq, 0, $maxIzq);
-                }
-
-                // Calculamos espacios blancos para rellenar el centro
-                $espacios = $ancho - mb_strlen($izq) - mb_strlen($totalFila);
-                $printer->text($izq . str_repeat(" ", $espacios > 0 ? $espacios : 1) . $totalFila . "\n");
+                
+                $izq2 = "   (" . $precioUnitario . " c/u)";
+                $espacios2 = $ancho - mb_strlen($izq2) - mb_strlen($totalFila);
+                $printer->text($izq2 . str_repeat(" ", $espacios2 > 0 ? $espacios2 : 1) . $totalFila . "\n");
             }
-            $printer->text($linea);
+            $printer->text($lineaGruesa);
 
-            // 5. Totales (Alineados matemáticamente a la derecha)
+            // 5. TOTALES
             $subtotal = "$" . number_format($venta->subtotal, 2);
-            $esp = $ancho - mb_strlen("SUBTOTAL:") - mb_strlen($subtotal);
-            $printer->text("SUBTOTAL:" . str_repeat(" ", $esp > 0 ? $esp : 1) . $subtotal . "\n");
+            $esp = $ancho - mb_strlen("SUBTOTAL (SIN IVA):") - mb_strlen($subtotal);
+            $printer->text("SUBTOTAL (SIN IVA):" . str_repeat(" ", $esp > 0 ? $esp : 1) . $subtotal . "\n");
 
-            // --- NUEVO: Mostrar el Ahorro si existe ---
             if ($venta->descuento > 0) {
-                $textoAhorro = "AHORRO POR COMBO:";
+                $textoAhorro = "AHORRO POR PROMOCION:";
                 $montoAhorro = "-$" . number_format($venta->descuento, 2);
                 $esp = $ancho - mb_strlen($textoAhorro) - mb_strlen($montoAhorro);
                 $printer->text($textoAhorro . str_repeat(" ", $esp > 0 ? $esp : 1) . $montoAhorro . "\n");
             }
-            // ------------------------------------------
 
             $iva = "$" . number_format($venta->total_iva, 2);
             $esp = $ancho - mb_strlen("IVA (13%):") - mb_strlen($iva);
             $printer->text("IVA (13%):" . str_repeat(" ", $esp > 0 ? $esp : 1) . $iva . "\n");
-
-            $printer->text("\n"); // Pequeño salto para destacar el total
             
+            $printer->text("\n"); 
+            
+            $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_RIGHT);
+            $printer->setTextSize(1, 2);
             $printer->setEmphasis(true);
-            $total = "$" . number_format($venta->total_pagar, 2);
-            $esp = $ancho - mb_strlen("TOTAL A PAGAR:") - mb_strlen($total);
-            $printer->text("TOTAL A PAGAR:" . str_repeat(" ", $esp > 0 ? $esp : 1) . $total . "\n");
+            $printer->text("TOTAL A PAGAR: $" . number_format($venta->total_pagar, 2) . "\n");
+            $printer->setTextSize(1, 1);
             $printer->setEmphasis(false);
-
-            $printer->text($linea);
-
-            // 6. Pie de página
-            $printer->setJustification(Printer::JUSTIFY_CENTER);
-            $printer->text("Gracias por su preferencia\n");
-            $printer->text("Revise su motocicleta antes\n");
-            $printer->text("de salir.\n");
-            $printer->text("\n\n"); // Espacio para que la cuchilla corte bien
-
-            $printer->cut();
             
-            // Cerramos la conexión
+            $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_LEFT);
+            $printer->text($lineaGruesa);
+
+            // 6. PIE DE PÁGINA
+            $printer->setJustification(\Mike42\Escpos\Printer::JUSTIFY_CENTER);
+            $printer->text("GRACIAS POR SU PREFERENCIA\n\n");
+            $printer->text("Este documento no sustituye\n");
+            $printer->text("su comprobante fiscal.\n");
+            $printer->text("Revise su motocicleta y repuestos\n");
+            $printer->text("antes de retirarse del taller.\n");
+            $printer->text("\n\n\n\n"); 
+            
+            $printer->cut();
             $printer->close();
 
             return redirect()->back()->with('success', 'Ticket enviado a la impresora exitosamente.');
 
         } catch (\Exception $e) {
-            return redirect()->back()->withErrors('Error de impresora: Revise si está encendida y conectada a la red. Detalle: ' . $e->getMessage());
+            return redirect()->back()->withErrors('Error de impresora: ' . $e->getMessage());
         }
     }
 
@@ -254,7 +272,7 @@ class VentaController extends Controller
         return view('ventas.index', compact('ventas', 'totalHoy', 'totalMes'));
     }
 
-    // Mostrar el detalle de una venta específica (Factura/Ticket)
+    // Mostrar el detalle de una venta específica 
     public function show($id)
     {
         $venta = Venta::with(['cliente', 'orden.motocicleta', 'detalles.producto'])->findOrFail($id);

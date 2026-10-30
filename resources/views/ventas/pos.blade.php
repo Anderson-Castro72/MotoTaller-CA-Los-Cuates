@@ -43,15 +43,15 @@
                     <select name="cliente_id" id="clienteSelect" form="formVenta" class="form-select select2" required>
                         <option value="1">VENTA DE MOSTRADOR (Consumidor Final)</option>
                         
-                        <?php foreach($clientes as$cliente): ?>
+                        @foreach($clientes as $cliente)
                             @if($cliente->id != 1)
                                 <option value="{{ $cliente->id }}">
                                     {{ $cliente->nombre }} 
-                                    {{ $cliente->telefono ? ' \vert{} Tel: '.$cliente->telefono : '' }} 
-                                    {{ $cliente->dui ? ' \vert{} DUI: '.$cliente->dui : '' }}
+                                    {{ $cliente->telefono ? ' | Tel: '.$cliente->telefono : '' }} 
+                                    {{ $cliente->dui ? ' | DUI: '.$cliente->dui : '' }}
                                 </option>
                             @endif
-                        <?php endforeach; ?>
+                        @endforeach
                     </select>
                 </div>
                 <div>
@@ -72,12 +72,11 @@
                             <button class="btn btn-success" type="button" id="btnBuscar">➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
-                            <i class="fas "></i> Esc
+                            <i class="fas fa-camera"></i> Escáner
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
                              Catálogo
                         </button>
-                        <!-- BOTÓN DE COMBOS -->
                         <button type="button" class="btn btn-sm btn-warning ms-2 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#modalCombos">
                             Agregar Combo
                         </button>
@@ -118,7 +117,6 @@
                     </div>
                     <div class="card-body">
                         
-                        <!-- ÁREA DE COMBOS APLICADOS -->
                         <div id="listaCombosAplicados" class="mb-3"></div>
 
                         <div class="d-flex justify-content-between mb-2">
@@ -126,7 +124,6 @@
                             <span class="fw-bold">$<span id="txtSubtotal">0.00</span></span>
                         </div>
                         
-                        <!-- FILA DE DESCUENTO -->
                         <div class="d-flex justify-content-between mb-2 text-success" id="filaDescuento" style="display: none !important;">
                             <span class="fw-bold">Descuento (Combos):</span>
                             <span class="fw-bold">-$<span id="txtDescuento">0.00</span></span>
@@ -154,6 +151,28 @@
                             <input type="hidden" name="total_final" id="inputTotal">
                             
                             <div id="inputsCarritoOcultos"></div>
+
+                            <label class="form-label fw-bold small text-dark mt-2">Método de Pago</label>
+                            <select name="metodo_pago" id="metodoPago" class="form-select mb-3 border-dark">
+                                <option value="Efectivo">💵 Efectivo (Caja)</option>
+                                <option value="Tarjeta">💳 Tarjeta (POS Bancario)</option>
+                                <option value="Transferencia">📱 Transferencia (Banco)</option>
+                            </select>
+
+                            <div id="cajaEfectivo" class="bg-light p-3 rounded mb-3 border border-secondary shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <label class="form-label fw-bold small mb-0 text-secondary">Monto Recibido:</label>
+                                </div>
+                                <div class="input-group mb-2">
+                                    <span class="input-group-text fw-bold bg-white">$</span>
+                                    <input type="number" step="0.01" min="0" class="form-control form-control-lg text-end fw-bold fs-4 text-primary" name="monto_recibido" id="montoRecibido" placeholder="0.00" autocomplete="off">
+                                </div>
+                                <div class="d-flex justify-content-between text-danger fs-5 mt-2">
+                                    <span class="fw-bold">Dar Cambio:</span>
+                                    <span class="fw-bold">$<span id="txtCambio">0.00</span></span>
+                                </div>
+                                <input type="hidden" name="cambio" id="inputCambio" value="0">
+                            </div>
 
                             <label class="form-label fw-bold small">Tipo de Documento</label>
                             <select name="tipo_documento" class="form-select mb-4">
@@ -187,7 +206,7 @@
                     </div>
 
                     <div class="list-group list-group-flush" id="listaServicios">
-                        <?php foreach($servicios as$servicio): ?>
+                        @foreach($servicios as $servicio)
                             <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
                                 <div>
                                     <h6 class="mb-0 fw-bold nombre-servicio">{{ $servicio->nombre }}</h6>
@@ -201,10 +220,10 @@
                                     </button>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        @endforeach
 
                         @if(isset($productos))
-                            <?php foreach($productos as$producto): ?>
+                            @foreach($productos as $producto)
                                 <div class="list-group-item d-flex justify-content-between align-items-center p-2 item-servicio">
                                     <div>
                                         <h6 class="mb-0 fw-bold nombre-servicio">{{ $producto->nombre }}</h6>
@@ -226,7 +245,7 @@
                                         </button>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
+                            @endforeach
                         @endif
                     </div>
                 </div>
@@ -244,15 +263,15 @@
                 </div>
                 <div class="modal-body p-3">
                     <div class="list-group list-group-flush">
-                        <?php if(count($combos) > 0): ?>
-                            <?php foreach($combos as$combo): ?>
+                        @if(count($combos) > 0)
+                            @foreach($combos as $combo)
                                 <div class="list-group-item d-flex justify-content-between align-items-center p-3 border-bottom">
                                     <div>
                                         <h6 class="mb-1 fw-bold fs-5">{{ $combo->nombre }}</h6>
                                         <small class="text-muted d-block mb-2">Contiene: 
-                                            <?php foreach($combo->productos as$p): ?>
-                                                {{ $p->pivot->cantidad }}x {{$p->nombre }},
-                                            <?php endforeach; ?>
+                                            @foreach($combo->productos as $p)
+                                                {{ $p->pivot->cantidad }}x {{$p->nombre }}@if(!$loop->last), @endif
+                                            @endforeach
                                         </small>
                                     </div>
                                     <div class="text-end ms-3">
@@ -262,10 +281,10 @@
                                         </button>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else: ?>
+                            @endforeach
+                        @else
                             <div class="text-center text-muted py-4">No hay combos activos en este momento.</div>
-                        <?php endif; ?>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -433,6 +452,57 @@
         const inputCodigo = document.getElementById('codigo_producto');
         $('.select2').select2({ placeholder: "Escriba para buscar un cliente...", allowClear: true, width: '100%' });
 
+        // --- FUNCION DE VALIDACIÓN DE COBRO (A PRUEBA DE FALLOS) ---
+        window.validarCobro = function() {
+            let inputTotal = document.getElementById('inputTotal');
+            let total = parseFloat(inputTotal?.value) || 0;
+            
+            let btnCobrar = document.getElementById('btnCobrar');
+            let selectMetodoPago = document.getElementById('metodoPago');
+            let inputMontoRecibido = document.getElementById('montoRecibido');
+            let txtCambio = document.getElementById('txtCambio');
+            let inputCambio = document.getElementById('inputCambio');
+            
+            // Si el botón no existe en esta vista, terminamos para evitar errores
+            if (!btnCobrar) return; 
+            
+            // Regla 1: Si el carrito está vacío o total es 0, bloqueamos
+            if (carrito.length === 0 || total <= 0) {
+                btnCobrar.disabled = true;
+                if(txtCambio) txtCambio.innerText = "0.00";
+                if(inputCambio) inputCambio.value = "0";
+                return;
+            }
+
+            // Regla 2: Validar según método de pago
+            if (selectMetodoPago && selectMetodoPago.value === 'Efectivo') {
+                let recibidoTexto = inputMontoRecibido?.value || "";
+                let recibido = parseFloat(recibidoTexto) || 0;
+                let cambio = recibido - total;
+
+                if (recibidoTexto === "" || recibido < total) {
+                    if(txtCambio) txtCambio.innerText = "0.00";
+                    if(inputCambio) inputCambio.value = "0";
+                    btnCobrar.disabled = true; // Bloqueado: Falta dinero
+                } else {
+                    if(txtCambio) txtCambio.innerText = cambio.toFixed(2);
+                    if(inputCambio) inputCambio.value = cambio.toFixed(2);
+                    btnCobrar.disabled = false; // Liberado: Alcanza el dinero
+                }
+            } else {
+                // Para Tarjeta, Transferencia, etc (solo bloquea si el total es 0, que ya validamos arriba)
+                if(txtCambio) txtCambio.innerText = "0.00";
+                if(inputCambio) inputCambio.value = "0";
+                btnCobrar.disabled = false; 
+            }
+        };
+
+        // --- ASIGNAR EVENTOS DE VALIDACIÓN A LOS INPUTS DE PAGO ---
+        const selectMetodoPago = document.getElementById('metodoPago');
+        const inputMontoRecibido = document.getElementById('montoRecibido');
+        if(selectMetodoPago) selectMetodoPago.addEventListener('change', window.validarCobro);
+        if(inputMontoRecibido) inputMontoRecibido.addEventListener('input', window.validarCobro);
+
         window.renderizarCarrito = function() {
             const cuerpo = document.getElementById('cuerpoCarrito');
             const inputsOcultos = document.getElementById('inputsCarritoOcultos');
@@ -444,10 +514,7 @@
 
             if (carrito.length === 0) {
                 cuerpo.innerHTML = '<tr id="filaVacia"><td colspan="6" class="text-muted py-4">El carrito está vacío. Escanea un repuesto para empezar.</td></tr>';
-                document.getElementById('btnCobrar').disabled = true;
             } else {
-                document.getElementById('btnCobrar').disabled = false;
-                
                 carrito.forEach((item, index) => {
                     let precioFinalUnitario = parseFloat(item.precio); 
                     let precioUnitarioSinIva = precioFinalUnitario / 1.13; 
@@ -511,6 +578,9 @@
             document.getElementById('inputDescuentoHidden').value = ahorroSinIva.toFixed(2);
             document.getElementById('inputIva').value = ivaFinal.toFixed(2);
             document.getElementById('inputTotal').value = totalFinal.toFixed(2);
+
+            // Validar el estado del botón cobrar cada vez que el carrito cambia
+            window.validarCobro();
         }
 
         window.renderizarCombosAplicados = function() {
@@ -542,6 +612,7 @@
                     
                     if ((cantEnCarrito + cantRequerida) > prod.stock_actual) {
                         stockSuficiente = false;
+                        // CORRECCIÓN APLICADA: Línea reparada
                         mensajeError = `Falta inventario de "${prod.nombre}". Requiere ${cantRequerida}, Disponible extra: ${prod.stock_actual - cantEnCarrito}.`;
                         break;
                     }
