@@ -245,7 +245,7 @@ class VentaController extends Controller
             $printer->text("Revise su motocicleta y repuestos\n");
             $printer->text("antes de retirarse del taller.\n");
             $printer->text("\n\n\n\n"); 
-            
+            $printer->pulse();
             $printer->cut();
             $printer->close();
 
