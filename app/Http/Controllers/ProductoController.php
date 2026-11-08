@@ -31,18 +31,21 @@ class ProductoController extends Controller
         return view('inventario.index', compact('productos'));
     }
 
-    public function create()
+public function create()
     {
-        $ultimoServicio = Producto::where('codigo', 'like', 'TMCA-%')
+        // 1. Buscamos el último registro con el nuevo formato en minúsculas 'tmca'
+        $ultimoServicio = Producto::where('codigo', 'like', 'tmca%')
                                   ->orderBy('codigo', 'desc')
                                   ->first();
         
-        $siguienteCodigo = 'TMCA-0001'; 
+        // 2. Definimos el código inicial sin guion y en minúsculas
+        $siguienteCodigo = 'tmca0001'; 
     
         if ($ultimoServicio) {
-
-            $numero = intval(substr($ultimoServicio->codigo, 5)) + 1;
-            $siguienteCodigo = 'TMCA-' . str_pad($numero, 4, '0', STR_PAD_LEFT);
+            // 3. Extraemos a partir del carácter 4 (porque 'tmca' tiene 4 letras)
+            $numero = intval(substr($ultimoServicio->codigo, 4)) + 1;
+            // 4. Concatenamos el nuevo prefijo con el número formateado a 4 dígitos
+            $siguienteCodigo = 'tmca' . str_pad($numero, 4, '0', STR_PAD_LEFT);
         }
     
         return view('inventario.create', compact('siguienteCodigo'));

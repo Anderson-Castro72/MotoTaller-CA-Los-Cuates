@@ -132,8 +132,8 @@
         const inputMinimo = document.querySelector('input[name="stock_minimo"]');
         
         // Esta variable viene desde el ProductoController (Ej: TMCA-0001)
-        const codigoGenerado = "{{ $siguienteCodigo ?? 'TMCA-0001' }}";
-
+        const codigoGenerado = "{{ $siguienteCodigo ?? 'tmca0001' }}";
+        
         checkServicio.addEventListener('change', function() {
             if(this.checked) {
                 // Si es servicio: pone código automático y DESACTIVA los stocks
