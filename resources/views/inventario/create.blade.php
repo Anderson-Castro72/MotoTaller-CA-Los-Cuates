@@ -54,6 +54,14 @@
                         </div>
                     </div>
 
+                    <div class="form-check form-switch mt-2">
+                            <!-- NOTA: No le ponemos atributo 'name' para que no viaje al backend al guardar -->
+                            <input class="form-check-input" type="checkbox" id="generar_codigo">
+                            <label class="form-check-label text-muted" style="font-size: 0.85rem;" for="generar_codigo">
+                                Generar código interno
+                            </label>
+                        </div>
+
                     <hr>
 
                     <div class="text-end">
@@ -124,35 +132,47 @@
         });
 
         // ==========================================
-        // 2. LÓGICA DEL CHECKBOX DE SERVICIOS
+        // 2. LÓGICA DE CHECKBOXES (SERVICIOS Y CÓDIGO INTERNO)
         // ==========================================
         const checkServicio = document.getElementById('es_servicio');
+        const checkGenerar = document.getElementById('generar_codigo'); // Nuevo elemento
         const inputCodigo = document.getElementById('codigo_input');
         const inputStock = document.querySelector('input[name="stock_actual"]');
         const inputMinimo = document.querySelector('input[name="stock_minimo"]');
         
-        // Esta variable viene desde el ProductoController (Ej: TMCA-0001)
         const codigoGenerado = "{{ $siguienteCodigo ?? 'tmca0001' }}";
-        
-        checkServicio.addEventListener('change', function() {
-            if(this.checked) {
-                // Si es servicio: pone código automático y DESACTIVA los stocks
+
+        // Función centralizada para decidir si mostramos el código automático
+        function evaluarCodigoAutomatico() {
+            if (checkServicio.checked || checkGenerar.checked) {
                 inputCodigo.value = codigoGenerado;
                 inputCodigo.setAttribute('readonly', true); 
-                
+            } else {
+                inputCodigo.value = '';
+                inputCodigo.removeAttribute('readonly');
+                inputCodigo.focus(); 
+            }
+        }
+
+        // Evento para el NUEVO switch de generar código
+        checkGenerar.addEventListener('change', evaluarCodigoAutomatico);
+
+        // Evento modificado para el switch de servicios
+        checkServicio.addEventListener('change', function() {
+            
+            evaluarCodigoAutomatico(); // Evalúa la regla del código
+
+            if(this.checked) {
+                // Si es servicio: DESACTIVA los stocks
                 inputStock.value = 0;
                 inputMinimo.value = 0;
                 inputStock.setAttribute('readonly', true);
-                inputStock.classList.add('bg-secondary', 'text-white'); // Efecto visual de apagado
+                inputStock.classList.add('bg-secondary', 'text-white'); 
                 
                 inputMinimo.setAttribute('readonly', true);
                 inputMinimo.classList.add('bg-secondary', 'text-white');
             } else {
-                // Si es repuesto: limpia el código y VUELVE A PEDIR el stock
-                inputCodigo.value = '';
-                inputCodigo.removeAttribute('readonly');
-                inputCodigo.focus(); 
-                
+                // Si no es servicio: VUELVE A PEDIR el stock
                 inputStock.value = 1;
                 inputMinimo.value = 1;
                 inputStock.removeAttribute('readonly');
