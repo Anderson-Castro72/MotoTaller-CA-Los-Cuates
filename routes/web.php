@@ -33,6 +33,7 @@ Route::get('/ventas/buscar-producto/{codigo}', [VentaController::class, 'buscarP
 Route::post('/ventas/guardar', [VentaController::class, 'store'])->name('ventas.store');
 Route::get('/ventas/imprimir-red/{id}', [VentaController::class, 'imprimirTicketRed'])->name('ventas.imprimir_red');
 Route::get('/ventas/directa', [VentaController::class, 'posDirecto'])->name('ventas.directa');
+Route::post('/caja/abrir-gaveta', [App\Http\Controllers\VentaController::class, 'abrirGaveta'])->name('caja.abrir-gaveta');
 
 Route::post('/clientes/rapido', [ClienteController::class, 'storeRapido'])->name('clientes.rapido');
 

@@ -20,11 +20,18 @@
 @section('content')
     <div class="container-fluid py-2">
         
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h3 class="text-primary fw-bold mb-0">🛒 Punto de Venta (POS)</h3>
+        <div class="position-relative mb-3">
+            <!-- El título dicta la altura real de este bloque -->
+            <h3 class="text-primary fw-bold mb-0">🛒 Punto de Venta (POS)</h3>
+            
+            <!-- Botones flotantes a la derecha: no empujan el contenido de abajo -->
+            <div class="position-absolute top-0 end-0 d-flex flex-column align-items-end" style="z-index: 10;">
+                <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary mb-2">⬅️ Volver</a>
+                
+                <button type="button" class="btn btn-warning fw-bold shadow-sm" id="btnAbrirCaja">
+                    Abrir Caja
+                </button>
             </div>
-            <a href="{{ route('recepcion.index') }}" class="btn btn-outline-secondary">⬅️ Volver</a>
         </div>
         
         @if($orden)
@@ -72,13 +79,16 @@
                             <button class="btn btn-success" type="button" id="btnBuscar">➕</button>
                         </div>
                         <button type="button" id="btnEscanerCamara" class="btn btn-sm btn-outline-dark">
-                            <i class="fas fa-camera"></i> Escáner
+                            <i class="fas fa-camera"></i> Esc
                         </button>
                         <button type="button" class="btn btn-sm btn-outline-primary ms-2" data-bs-toggle="modal" data-bs-target="#modalServicios">
                              Catálogo
                         </button>
                         <button type="button" class="btn btn-sm btn-warning ms-2 fw-bold text-dark" data-bs-toggle="modal" data-bs-target="#modalCombos">
                             Agregar Combo
+                        </button>
+                        <button type="button" class="btn btn-sm btn-info ms-2 fw-bold text-dark" id="btnManoObraLibre">
+                            Mano de Obra
                         </button>
 
                         <div id="reader" width="100%" style="display: none;" class="mt-3"></div>
@@ -329,57 +339,89 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
 
-            @if(session('success'))
-                @if(session('tipo_documento') == 'Ticket')
-                    fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
-                        .catch(error => console.error('Error al auto-imprimir:', error));
-                    
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Cobro Procesado con Éxito!',
-                        text: 'Ticket impreso automáticamente.',
-                        showCancelButton: true,
-                        confirmButtonText: 'Reimprimir',
-                        cancelButtonText: 'Aceptar',
-                        confirmButtonColor: '#0d6efd',
-                        cancelButtonColor: '#198754',
-                        reverseButtons: true
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            Swal.fire({
-                                title: 'Enviando a impresora...',
-                                text: 'Por favor espere.',
-                                allowOutsideClick: false,
-                                didOpen: () => { Swal.showLoading() }
-                            });
+        // ==========================================
+        // 1. GUARDAR EL CAMBIO (Sin detener el envío)
+        // ==========================================
+        const formVenta = document.getElementById('formVenta');
+        if (formVenta) {
+            formVenta.addEventListener('submit', function() {
+                // Solo guardamos el número temporalmente, el formulario sigue su curso normal
+                let cambio = document.getElementById('inputCambio').value || 0;
+                sessionStorage.setItem('ultimo_cambio', cambio);
+            });
+        }
 
-                            fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
-                                .then(() => {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: '¡Reimpreso!',
-                                        text: 'El ticket se volvió a imprimir.',
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    });
-                                })
-                                .catch(() => {
-                                    Swal.fire('Error', 'No se pudo comunicar con la impresora', 'error');
+        // ==========================================
+        // 2. MOSTRAR LA ALERTA (Con el cambio incluido)
+        // ==========================================
+        @if(session('success'))
+            
+            // Leemos el cambio de la memoria y limpiamos el dato
+            let cambioGuardado = sessionStorage.getItem('ultimo_cambio');
+            sessionStorage.removeItem('ultimo_cambio');
+
+            // Preparamos el diseño del texto
+            let textoHtml = '<p class="fs-5">Ticket impreso automáticamente.</p>';
+            if (cambioGuardado && parseFloat(cambioGuardado) > 0) {
+                textoHtml += `
+                    <h3 class="text-secondary mt-3">Cambio a entregar:</h3>
+                    <h1 class="text-success fw-bold" style="font-size: 5rem; margin-top: 10px;">$${parseFloat(cambioGuardado).toFixed(2)}</h1>
+                `;
+            }
+
+            @if(session('tipo_documento') == 'Ticket')
+                // La orden a la impresora y gaveta se envía sin interrupciones
+                fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
+                    .catch(error => console.error('Error al auto-imprimir:', error));
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Cobro Procesado con Éxito!',
+                    html: textoHtml, // Aquí inyectamos el número gigante
+                    showCancelButton: true,
+                    confirmButtonText: 'Reimprimir',
+                    cancelButtonText: 'Aceptar',
+                    confirmButtonColor: '#0d6efd',
+                    cancelButtonColor: '#198754',
+                    reverseButtons: true,
+                    allowOutsideClick: false // Evita que se cierre si dan clic fuera del cuadro
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Enviando a impresora...',
+                            text: 'Por favor espere.',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading() }
+                        });
+
+                        fetch("{{ url('/ventas/imprimir-red') }}/{{ session('ticket_id') }}")
+                            .then(() => {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: '¡Reimpreso!',
+                                    text: 'El ticket se volvió a imprimir.',
+                                    timer: 2000,
+                                    showConfirmButton: false
                                 });
-                        }
-                    });
+                            })
+                            .catch(() => {
+                                Swal.fire('Error', 'No se pudo comunicar con la impresora', 'error');
+                            });
+                    }
+                });
 
-                @else
-                    Swal.fire({
-                        icon: 'success',
-                        title: '¡Cobro Procesado!',
-                        text: 'Documento registrado.',
-                        confirmButtonColor: '#198754'
-                    });
-                @endif
+            @else
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Cobro Procesado!',
+                    html: textoHtml !== '<p class="fs-5">Ticket impreso automáticamente.</p>' ? textoHtml : 'Documento registrado.',
+                    confirmButtonColor: '#198754',
+                    allowOutsideClick: false
+                });
             @endif
+        @endif
 
-        });
+    });
 
     function formatoTel(input) {
         let valor = input.value.replace(/\D/g, '');
@@ -544,6 +586,7 @@
 
                     inputsOcultos.innerHTML += `
                         <input type="hidden" name="productos[${index}][id]" value="${item.id}">
+                        <input type="hidden" name="productos[${index}][nombre]" value="${item.nombre}">
                         <input type="hidden" name="productos[${index}][cantidad]" value="${item.cantidad}">
                         <input type="hidden" name="productos[${index}][precio_unitario_sin_iva]" value="${precioUnitarioSinIva.toFixed(2)}">
                         <input type="hidden" name="productos[${index}][monto_iva_unitario]" value="${montoIvaUnitario.toFixed(2)}">
@@ -612,7 +655,6 @@
                     
                     if ((cantEnCarrito + cantRequerida) > prod.stock_actual) {
                         stockSuficiente = false;
-                        // CORRECCIÓN APLICADA: Línea reparada
                         mensajeError = `Falta inventario de "${prod.nombre}". Requiere ${cantRequerida}, Disponible extra: ${prod.stock_actual - cantEnCarrito}.`;
                         break;
                     }
@@ -702,11 +744,11 @@
                 .catch(error => console.error('Error en búsqueda:', error));
         }   
 
-        document.getElementById('btnBuscar').addEventListener('click', () => buscarProducto(inputCodigo.value));
+        document.getElementById('btnBuscar').addEventListener('click', () => window.buscarProducto(inputCodigo.value));
         inputCodigo.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault(); 
-                buscarProducto(this.value);
+                window.buscarProducto(this.value);
             }
         });
 
@@ -744,7 +786,7 @@
             html5QrcodeScanner.clear();
             readerDiv.style.display = 'none';
             inputCodigo.value = decodedText;
-            buscarProducto(decodedText);
+            window.buscarProducto(decodedText);
         }
 
         const buscadorServicios = document.getElementById('buscadorServicios');
@@ -764,6 +806,99 @@
                 });
             });
         }
+
+        // ==========================================
+        // NUEVO: AGREGAR MANO DE OBRA LIBRE AL TICKET
+        // ==========================================
+        const btnManoObraLibre = document.getElementById('btnManoObraLibre');
+        if (btnManoObraLibre) {
+            btnManoObraLibre.addEventListener('click', function() {
+                Swal.fire({
+                    title: 'Agregar Mano de Obra',
+                    html: `
+                        <input type="text" id="swal-desc-mo" class="form-control mb-3" placeholder="Descripción del trabajo (Ej. Limpieza de carburador)" autofocus>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" id="swal-precio-mo" class="form-control" placeholder="0.00" step="0.01" min="0">
+                        </div>
+                    `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Agregar al Ticket',
+                    cancelButtonText: 'Cancelar',
+                    preConfirm: () => {
+                        const desc = document.getElementById('swal-desc-mo').value.trim();
+                        const precio = parseFloat(document.getElementById('swal-precio-mo').value);
+                        
+                        if (!desc) {
+                            Swal.showValidationMessage('Debes ingresar una descripción');
+                            return false;
+                        }
+                        if (!precio || precio <= 0) {
+                            Swal.showValidationMessage('El precio debe ser mayor a 0');
+                            return false;
+                        }
+                        
+                        return { desc: desc, precio: precio };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        let idTemporal = Math.floor(Math.random() * -1000000); 
+                        let servicioLibre = {
+                            id: idTemporal,
+                            codigo: 'MO-LIBRE',
+                            nombre: 'Mano de Obra: ' + result.value.desc,
+                            precio: result.value.precio,
+                            cantidad: 1,
+                            es_servicio: 1,
+                            stock_actual: 0 
+                        };
+                        carrito.push(servicioLibre);
+                        window.renderizarCarrito();
+                    }
+                });
+            });
+        }
+
     });
+
+    // ==========================================
+    // BOTON DE ABRIR CAJA MANUAL
+    // ==========================================
+    const btnAbrirCaja = document.getElementById('btnAbrirCaja');
+    if (btnAbrirCaja) {
+        btnAbrirCaja.addEventListener('click', function() {
+            Swal.fire({
+                title: 'Abriendo caja...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch("{{ route('caja.abrir-gaveta') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Caja Abierta!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                } else {
+                    Swal.fire('Error', data.message, 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Error de Conexión', 'No se pudo contactar con la impresora en red.', 'error');
+                console.error(error);
+            });
+        });
+    }
 </script>
 @endpush

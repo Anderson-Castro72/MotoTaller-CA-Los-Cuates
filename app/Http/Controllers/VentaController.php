@@ -81,20 +81,42 @@ class VentaController extends Controller
 
             // 3. Guardar el detalle línea por línea y descontar inventario
             foreach ($request->productos as $item) {
+                
+                $productoId = $item['id'];
+
+                // --- NUEVO: Interceptar Mano de Obra Libre (ID negativo) ---
+                if ($productoId < 0) {
+                    $nombreTrabajo = $item['nombre'] ?? 'Mano de Obra Varias';
+                    
+                    // Creamos un registro fantasma para que la base de datos no dé error
+                    // y el ticket tenga el texto exacto.
+                    $producto = Producto::firstOrCreate(
+                        ['nombre' => $nombreTrabajo],
+                        [
+                            'codigo' => 'MO-' . time() . rand(10, 99), // Código único automático
+                            'precio' => 0, // El precio real queda guardado en la venta
+                            'stock_actual' => 0,
+                            'stock_minimo' => 0,
+                            'es_servicio' => true,
+                            'activo' => false // ¡FANTASMA! No ensucia tu catálogo visible
+                        ]
+                    );
+                    $productoId = $producto->id; // Obtenemos el ID real generado
+                } else {
+                    $producto = Producto::find($productoId);
+                }
+
                 VentaDetalle::create([
                     'venta_id' => $venta->id,
-                    'producto_id' => $item['id'],
+                    'producto_id' => $productoId, // Usamos el ID real validado
                     'cantidad' => $item['cantidad'],
                     'precio_unitario_sin_iva' => $item['precio_unitario_sin_iva'],
                     'monto_iva_unitario' => $item['monto_iva_unitario'],
                     'subtotal_linea' => $item['subtotal_linea'],
                 ]);
 
-                // Buscamos el producto en la base de datos
-                $producto = Producto::find($item['id']);
-                
                 // REGLA CLAVE: Solo descontamos stock si NO es un servicio
-                if (!$producto->es_servicio) {
+                if ($producto && !$producto->es_servicio) {
                     $producto->stock_actual -= $item['cantidad'];
                     $producto->save();
                 }
@@ -277,5 +299,28 @@ class VentaController extends Controller
     {
         $venta = Venta::with(['cliente', 'orden.motocicleta', 'detalles.producto'])->findOrFail($id);
         return view('ventas.show', compact('venta'));
+    }
+    public function abrirGaveta(Request $request)
+    {
+        try {
+            // Reemplaza con la IP real de tu impresora de red
+            $connector = new NetworkPrintConnector("192.168.1.200", 9100);
+            $printer = new Printer($connector);
+            
+            // Este comando envía el pulso eléctrico al puerto RJ11 de la gaveta
+            $printer->pulse();
+            
+            $printer->close();
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Gaveta abierta correctamente.'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'No se pudo conectar a la impresora: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
